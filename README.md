@@ -1,6 +1,6 @@
 # starknet-signatures
 
-This repository gathers the code mentionned in the article [A guide on Starknet signatures](TODO).
+This repository gathers the code mentionned in the article [A guide on Starknet signatures](https://dev.to/bastienfaivre/a-guide-on-starknet-signatures-a3m).
 
 ## Running the code
 
