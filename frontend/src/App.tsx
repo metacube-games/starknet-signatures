@@ -3,7 +3,6 @@ import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, Grid } 
 import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, X as XIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
 import AceEditor from "react-ace";
 import 'brace/mode/json';
-import 'brace/theme/monokai';
 import { connect, disconnect } from "get-starknet";
 import { Account, RpcProvider, WeierstrassSignatureType } from "starknet";
 import { AccountInterface } from "starknet4";
@@ -54,6 +53,7 @@ const App: React.FC = () => {
 
         setWalletConnected(true);
         setAccount(starknet.account);
+        console.log(starknet.account);
         setAccountObject(new Account(starknetProvider!, starknet.account.address, '0x123'));
       } else {
         await disconnect();
@@ -162,16 +162,12 @@ const App: React.FC = () => {
         </Stack>
         <AceEditor
           mode="json"
-          theme="github"
           name="typed-data-editor"
           fontSize={14}
           highlightActiveLine
           value={typedData}
           onChange={setTypedData}
           setOptions={{
-            enableBasicAutocompletion: true,
-            enableLiveAutocompletion: true,
-            enableSnippets: true,
             showGutter: false,
             showFoldWidgets: false,
             showLineNumbers: false,
@@ -252,7 +248,10 @@ const App: React.FC = () => {
             {verificationResult ? "Signature is valid" : "Signature is invalid"}
           </Typography>
         )}
-        {verificationError && <Typography color="error">{verificationError}</Typography>}
+        {verificationError && <Typography color="error" align="center">{
+          verificationError.includes("Contract not found") ?
+            "Your account contract is not deployed! You need it to verify the signature on-chain." : verificationError
+        }</Typography>}
       </Stack>
 
       <Stack direction="row" alignItems="center" spacing={1}
