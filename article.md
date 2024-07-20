@@ -1,18 +1,18 @@
-# Signature Verification with Account Abstraction on Starknet
+# A guide on Starknet signatures
 
 ## Abstract
 
-This article outlines the process of signing and verifying a signature on Starknet. It begins by introducing Account Abstraction and how it modifies signature verification compared to traditional blockchains like Ethereum. It then provides comprehensive code examples in TypeScript and Go for signing a message and verifying a signature using two methods available on Starknet: utilizing the user's public key and using the user's account address.
+This article outlines the process of signing and verifying a signature on Starknet. It begins by introducing Account Abstraction and how it modifies signature verification compared to traditional blockchains like Ethereum. It then provides comprehensive code examples in TypeScript and Go for signing a message and verifying a signature using two methods available on Starknet: using the user's public key and using the user's account address.
 
 A live signature playground is available at [https://signatures.felts.xyz](https://signatures.felts.xyz)
 
-All the code examples shown in this article are available in the [associated GitHub repository](https://github.com/BastienFaivre/starknet-signatures). I want to thank [Thiago](https://github.com/thiagodeev) for his help on the code snippets.
+All the code examples given in this article are available in the [associated GitHub repository](https://github.com/BastienFaivre/starknet-signatures). I want to thank [Thiago](https://github.com/thiagodeev) for his help on the code snippets.
 
 ## Account Abstraction
 
 In Ethereum, individual user accounts, known as Externally Owned Accounts (EOAs), are controlled by a pair of private and public keys. Transactions require a signature from the private key to modify the account state. While secure, this system has significant drawbacks, such as irreversible asset loss if the private key is lost or stolen, limited wallet functionality, and a lack of user-friendly key or account recovery options.
 
-Starknet addresses these limitations through Account Abstraction (AA), where accounts are managed via smart contracts instead of private keys. This approach allows smart contracts to validate their transactions, enabling features like gas fees covered by smart contracts, multiple signers for a single account, and various cryptographic signatures. AA enhances security and user experience by enabling developers to design custom security models, such as different keys for routine and high-value transactions and biometric authentication for enhanced security. It also simplifies key recovery and management with methods like social recovery and hardware-based transaction signing. Additionally, AA supports key rotation, session keys for web3 applications, and diverse signature and validation schemes, allowing for tailored security measures. By addressing the inherent limitations of Ethereum's EOA model, Starknet's AA provides a more flexible, secure, and user-friendly approach to account management, significantly improving blockchain interactions.
+Starknet addresses these limitations through Account Abstraction (AA), which manages accounts through smart contracts instead of private keys. This approach allows smart contracts to validate their transactions, enabling features like gas fees covered by smart contracts, multiple signers for a single account, and various cryptographic signatures. AA enhances security and user experience by enabling developers to design custom security models, such as different keys for routine and high-value transactions and biometric authentication for enhanced security. It also simplifies key recovery and management with methods like social recovery and hardware-based transaction signing. Additionally, AA supports key rotation, session keys for web3 applications, and diverse signature and validation schemes, allowing for tailored security measures. By addressing the inherent limitations of Ethereum's EOA model, Starknet's AA provides a more flexible, secure, and user-friendly approach to account management, significantly improving blockchain interactions.
 
 ## Signature
 
@@ -324,18 +324,9 @@ if err != nil {
 }
 
 // we import the account address, r, and s values from the frontend (typescript)
-accountAddress, ok := new(big.Int).SetString("0xabc123", 16)
-if !ok {
-    // handle error
-}
-r, ok := new(big.Int).SetString("0xabc123", 16)
-if !ok {
-    // handle error
-}
-s, ok := new(big.Int).SetString("0xabc123", 16)
-if !ok {
-    // handle error
-}
+accountAddress, _ := new(big.Int).SetString("0xabc123", 16)
+r, _ := new(big.Int).SetString("0xabc123", 16)
+s, _ := new(big.Int).SetString("0xabc123", 16)
 
 // we need to get the message hash, but, this time, we use the account address instead of the public key. `message` is the same as the in the previous Go code
 hash, err := td.GetMessageHash(accountAddress, message, curve.Curve)
@@ -383,4 +374,12 @@ Make sure that the message structure is the same on the frontend and backend to 
 
 ## Conclusion
 
-I hope that this article provided you with a comprehensive understanding of signature verification and helped you implement it in your Starknet applications. If you have any questions or feedback, feel free to reach out to me on [Twitter](https://twitter.com/BastienFaivre) or [GitHub](https://github.com/BastienFaivre). Thank you for reading! 
+I hope that this article provided you with a comprehensive understanding of the signatures on Starknet and helped you implement it in your applications. If you have any questions or feedback, feel free to comment or reach out to me on [Twitter](https://twitter.com/BastienFaivre) or [GitHub](https://github.com/BastienFaivre). Thank you for reading! 
+
+Sources:
+- [https://book.starknet.io/ch04-00-account-abstraction.html](https://book.starknet.io/ch04-00-account-abstraction.html)
+- [https://www.starknetjs.com/docs/guides/signature/](https://www.starknetjs.com/docs/guides/signature/)
+- [https://docs.starknet.io/architecture-and-concepts/accounts/introduction/](https://docs.starknet.io/architecture-and-concepts/accounts/introduction/)
+- [https://docs.openzeppelin.com/contracts-cairo/0.4.0/accounts#isvalidsignature](https://docs.openzeppelin.com/contracts-cairo/0.4.0/accounts#isvalidsignature)
+- [https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)
+- [https://eips.ethereum.org/EIPS/eip-712](https://eips.ethereum.org/EIPS/eip-712)
