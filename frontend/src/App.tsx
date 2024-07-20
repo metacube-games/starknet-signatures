@@ -156,7 +156,7 @@ const App: React.FC = () => {
         <Typography variant="h5">Starknet Signature Playground</Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="caption">Checkout the complete signature guide</Typography>
-          <IconButton href="https://eips.ethereum.org/EIPS/eip-712" target="_blank" rel="noopener noreferrer">
+          <IconButton href="https://dev.to/bastienfaivre/a-guide-on-starknet-signatures-a3m" target="_blank" rel="noopener noreferrer">
             <OpenInNewIcon />
           </IconButton>
         </Stack>
