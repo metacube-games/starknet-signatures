@@ -36,9 +36,8 @@ const App: React.FC = () => {
   const [accountObject, setAccountObject] = useState<Account | null>(null);
   const [typedData, setTypedData] = useState<string>(DEFAULT_TYPED_DATA);
   const [signatureIsLoading, setSignatureIsLoading] = useState(false);
-  const [signature, setSignature] = useState<WeierstrassSignatureType | null>(null);
-  const [copiedR, setCopiedR] = useState(false);
-  const [copiedS, setCopiedS] = useState(false);
+  const [signatures, setSignatures] = useState<WeierstrassSignatureType[] | null>([{ r: BigInt(0), s: BigInt(0) } as WeierstrassSignatureType]);
+  const [copied, setCopied] = useState<boolean[]>(new Array(10).fill(false)); // Dumb solution to avoid React controlled error
   const [signatureError, setSignatureError] = useState<string | null>(null);
   const [verificationIsLoading, setVerificationIsLoading] = useState(false);
   const [verificationResult, setVerificationResult] = useState<boolean | null>(null);
@@ -53,14 +52,14 @@ const App: React.FC = () => {
 
         setWalletConnected(true);
         setAccount(starknet.account);
-        console.log(starknet.account);
         setAccountObject(new Account(starknetProvider!, starknet.account.address, '0x123'));
       } else {
         await disconnect();
         setWalletConnected(false);
         setAccount(null);
         setAccountObject(null);
-        setSignature(null);
+        setSignatures([{ r: BigInt(0), s: BigInt(0) } as WeierstrassSignatureType]);
+        setCopied(new Array(10).fill(false)); // Dumb solution to avoid React controlled error
         setSignatureError(null);
         setVerificationResult(null);
         setVerificationError(null);
@@ -73,7 +72,8 @@ const App: React.FC = () => {
 
   const signButtonClicked = async () => {
     setSignatureIsLoading(true);
-    setSignature(null);
+    setSignatures([{ r: BigInt(0), s: BigInt(0) } as WeierstrassSignatureType]);
+    setCopied(new Array(10).fill(false)); // Dumb solution to avoid React controlled error
     setSignatureError(null);
     setVerificationResult(null);
     setVerificationError(null);
@@ -84,7 +84,20 @@ const App: React.FC = () => {
       if (!sig) throw new Error("Failed to sign message");
 
       if (sig.length === 3) sig.shift();
-      setSignature({ r: BigInt(sig[0]), s: BigInt(sig[1]) } as WeierstrassSignatureType);
+      if (sig.length === 2) {
+        setCopied([false, false]);
+        setSignatures([{ r: BigInt(sig[0]), s: BigInt(sig[1]) } as WeierstrassSignatureType]);
+      } else {
+        // Likely Argent signature
+        const numberOfSignatures = sig[0];
+        if (sig.length !== 1 + 4 * numberOfSignatures) throw new Error("Invalid signature format");
+        let signatures: WeierstrassSignatureType[] = [];
+        for (let i = 0; i < numberOfSignatures; i++) {
+          signatures.push({ r: BigInt(sig[3 + 4 * i]), s: BigInt(sig[4 + 4 * i]) } as WeierstrassSignatureType);
+        }
+        setCopied(new Array(numberOfSignatures * 2).fill(false));
+        setSignatures(signatures);
+      }
     } catch (error: any) {
       setSignatureError(error.message);
     }
@@ -97,9 +110,9 @@ const App: React.FC = () => {
     setVerificationError(null);
     try {
       if (!accountObject) throw new Error("Account not connected");
-      if (!signature) throw new Error("Signature not provided");
+      if (!signatures) throw new Error("Signature not provided");
 
-      const result = await accountObject.verifyMessage(JSON.parse(typedData), signature);
+      const result = await accountObject.verifyMessage(JSON.parse(typedData), signatures.flatMap((sig) => [sig.r.toString(), sig.s.toString()]));
       setVerificationResult(result);
     } catch (error: any) {
       setVerificationError(error.message);
@@ -187,56 +200,84 @@ const App: React.FC = () => {
           Sign Typed Data
         </LoadingButton>
         {signatureError && <Typography color="error">{signatureError}</Typography>}
-        <TextField
-          id="r"
-          label="Component r"
-          fullWidth
-          value={(signature ? `0x${signature.r.toString(16)}` : "")}
-          InputProps={{
-            endAdornment: (
-              <Tooltip title="Copied!" placement="top" open={copiedR}>
-                <IconButton
-                  onClick={() => {
-                    navigator.clipboard.writeText(signature!.r.toString(16));
-                    setCopiedR(true);
-                    setTimeout(() => setCopiedR(false), 2000);
-                  }}
-                >
-                  <ContentCopyIcon />
-                </IconButton>
-              </Tooltip>
-            ),
-          }}
-          onChange={(e) => setSignature({ ...signature!, r: BigInt(e.target.value) } as WeierstrassSignatureType)}
-          sx={{ "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: "#000000" } }}
-        />
-        <TextField
-          id="s"
-          label="Component s"
-          fullWidth
-          value={(signature ? `0x${signature.s.toString(16)}` : "")}
-          InputProps={{
-            endAdornment: (
-              <Tooltip title="Copied!" placement="top" open={copiedS}>
-                <IconButton
-                  onClick={() => {
-                    navigator.clipboard.writeText(signature!.s.toString(16));
-                    setCopiedS(true);
-                    setTimeout(() => setCopiedS(false), 2000);
-                  }}
-                >
-                  <ContentCopyIcon />
-                </IconButton>
-              </Tooltip>
-            ),
-          }}
-          onChange={(e) => setSignature({ ...signature!, s: BigInt(e.target.value) } as WeierstrassSignatureType)}
-          sx={{ "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: "#000000" } }}
-        />
+        {signatures ? signatures.map((sig, index) => (
+          <React.Fragment key={index}>
+            <TextField
+              id={`r${signatures.length > 1 ? index + 1 : ""}`}
+              label={`Component r${signatures.length > 1 ? index + 1 : ""}`}
+              fullWidth
+              value={sig.r === BigInt(0) ? "" : `0x${sig.r.toString(16)}`}
+              InputProps={{
+                endAdornment: (
+                  <Tooltip title="Copied!" placement="top" open={copied[index * 2]}>
+                    <IconButton
+                      onClick={() => {
+                        navigator.clipboard.writeText(sig.r.toString(16));
+                        setCopied((prev) => {
+                          const newCopied = [...prev];
+                          newCopied[index * 2] = true;
+                          return newCopied;
+                        });
+                        setTimeout(() => setCopied((prev) => {
+                          const newCopied = [...prev];
+                          newCopied[index * 2] = false;
+                          return newCopied;
+                        }), 2000);
+                      }}
+                    >
+                      <ContentCopyIcon />
+                    </IconButton>
+                  </Tooltip>
+                ),
+              }}
+              onChange={(e) => {
+                const newSignatures = [...signatures];
+                newSignatures[index] = { ...sig, r: BigInt(e.target.value) } as WeierstrassSignatureType;
+                setSignatures(newSignatures);
+              }}
+              sx={{ "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: "#000000" } }}
+            />
+            <TextField
+              id={`s${signatures.length > 1 ? index + 1 : ""}`}
+              label={`Component s${signatures.length > 1 ? index + 1 : ""}`}
+              fullWidth
+              value={sig.s === BigInt(0) ? "" : `0x${sig.s.toString(16)}`}
+              InputProps={{
+                endAdornment: (
+                  <Tooltip title="Copied!" placement="top" open={copied[index * 2 + 1]}>
+                    <IconButton
+                      onClick={() => {
+                        navigator.clipboard.writeText(sig.s.toString(16));
+                        setCopied((prev) => {
+                          const newCopied = [...prev];
+                          newCopied[index * 2 + 1] = true;
+                          return newCopied;
+                        });
+                        setTimeout(() => setCopied((prev) => {
+                          const newCopied = [...prev];
+                          newCopied[index * 2 + 1] = false;
+                          return newCopied;
+                        }), 2000);
+                      }}
+                    >
+                      <ContentCopyIcon />
+                    </IconButton>
+                  </Tooltip>
+                ),
+              }}
+              onChange={(e) => {
+                const newSignatures = [...signatures];
+                newSignatures[index] = { ...sig, s: BigInt(e.target.value) } as WeierstrassSignatureType;
+                setSignatures(newSignatures);
+              }}
+              sx={{ "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: "#000000" } }}
+            />
+          </React.Fragment>
+        )) : null}
         <LoadingButton
           variant="contained"
           color="primary"
-          disabled={!walletConnected || !signature}
+          disabled={!walletConnected || (!signatures || (signatures.length === 1 && signatures[0].r === BigInt(0) && signatures[0].s === BigInt(0)))}
           loading={verificationIsLoading}
           onClick={verifyButtonClicked}
           startIcon={<CloudIcon />}
