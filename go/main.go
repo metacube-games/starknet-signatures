@@ -1,37 +1,47 @@
 package main
 
 import (
+	"context"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 
+	"github.com/NethermindEth/juno/core/felt"
+	"github.com/NethermindEth/starknet.go/account"
 	"github.com/NethermindEth/starknet.go/curve"
-	"github.com/NethermindEth/starknet.go/typed"
+	"github.com/NethermindEth/starknet.go/rpc"
+	"github.com/NethermindEth/starknet.go/typedData"
 	"github.com/NethermindEth/starknet.go/utils"
 )
 
-// NOTE: at the time of writing, starknet.go forces us to create a custom
-// message type as well as a method to format the message encoding since
-// there is no built-in generic way to encode messages.
-type MessageType struct {
-	Message string
-}
-
-// FmtDefinitionEncoding is a method that formats the encoding of the message
-func (m MessageType) FmtDefinitionEncoding(field string) (fmtEnc []*big.Int) {
-	if field == "message" {
-		if v, err := strconv.Atoi(m.Message); err == nil {
-			fmtEnc = append(fmtEnc, big.NewInt(int64(v)))
-		} else {
-			fmtEnc = append(fmtEnc, utils.UTF8StrToBig(m.Message))
-		}
+const typedDataContent = `
+{
+	"types": {
+	  	"StarkNetDomain": [
+			{ "name": "name", "type": "felt" },
+			{ "name": "chainId", "type": "felt" },
+			{ "name": "version", "type": "felt" }
+	  	],
+	  	"Message": [
+			{ "name": "message", "type": "felt" }
+	  	]
+	},
+	"primaryType": "Message",
+	"domain": {
+	  	"name": "MyDapp",
+	  	"chainId": "SN_MAIN",
+	  	"version": "0.0.1"
+	},
+	"message": {
+	  	"message": "hello world!"
 	}
-	return fmtEnc
 }
+`
 
 func main() {
 	//--------------------------------------------------------------------------
-	// Account
+	// Account with public key
 	//--------------------------------------------------------------------------
 	privateKey, _ := new(big.Int).SetString("1234567890987654321", 16)
 
@@ -67,45 +77,21 @@ func main() {
 	// 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2
 
 	//--------------------------------------------------------------------------
-	// Message
+	// Message with public key
 	//--------------------------------------------------------------------------
 
-	types := map[string]typed.TypeDef{
-		"StarkNetDomain": {
-			Definitions: []typed.Definition{
-				{Name: "name", Type: "felt"},
-				{Name: "chainId", Type: "felt"},
-				{Name: "version", Type: "felt"},
-			},
-		},
-		"Message": {
-			Definitions: []typed.Definition{
-				{Name: "message", Type: "felt"},
-			},
-		},
-	}
-
-	primaryType := "Message"
-
-	domain := typed.Domain{
-		Name:    "MyDapp",
-		ChainId: "SN_MAIN",
-		Version: "0.0.1",
-	}
-
-	message := MessageType{
-		Message: "hello world!",
-	}
-
-	td, err := typed.NewTypedData(types, primaryType, domain)
+	// NOTE: one can also build the typed data manually, following the fields
+	// and types defined in typedData.TypedData struct.
+	var ttd typedData.TypedData
+	err = json.Unmarshal([]byte(typedDataContent), &ttd)
 	if err != nil {
-		fmt.Println("Error creating TypedData:", err)
+		fmt.Printf("Error: %s\n", err)
 		return
 	}
 
-	hash, err := td.GetMessageHash(starknetPublicKey, message, curve.Curve)
+	hash, err := ttd.GetMessageHash(starknetPublicKey.String())
 	if err != nil {
-		fmt.Println("Error getting message hash:", err)
+		fmt.Printf("Error: %s\n", err)
 		return
 	}
 
@@ -114,20 +100,130 @@ func main() {
 	// 0x197093614bca282524e6b8f77de8f7dd9a9dd92ed4ea7f4f2b17f95e2bc441d
 
 	//--------------------------------------------------------------------------
-	// Signature
+	// Signature and verification with public key (check locally on curve)
 	//--------------------------------------------------------------------------
 
-	r, s, err := curve.Curve.Sign(hash, privateKey)
+	r, s, err := curve.Curve.Sign(hash.BigInt(new(big.Int)), privateKey)
 	if err != nil {
 		fmt.Println("Error signing message:", err)
 		return
 	}
 
-	isValid := curve.Curve.Verify(hash, r, s, starknetPublicKey, pubY)
+	isValid := curve.Curve.Verify(hash.BigInt(new(big.Int)), r, s, starknetPublicKey, pubY)
 
 	fmt.Println("\nSignature:")
 	fmt.Printf("\tSignature: r=0x%s, s=0x%s\n", r.Text(16), s.Text(16))
 	// r=0x59e1a24dc86990b8c1210d6e18d5641e6b94828d595b0d98279052f013e9945, s=0x72a50af8139178dddbb4b34ef2567fa78dcd44df8307cc47a2e39a6090e46eb
 	fmt.Printf("\tSignature is valid: %t\n", isValid)
 	// true
+
+	//--------------------------------------------------------------------------
+	// Account without public key
+	//--------------------------------------------------------------------------
+	// NOTE: you need a deployed account to run this code
+	const RPC_URL = ""
+	const ACCOUNT_ADDRESS = ""
+	const ACCOUNT_CAIRO_VERSION = 2
+	const PRIVATE_KEY = ""
+
+	// Safety check to ensure const values are set
+	if RPC_URL == "" || ACCOUNT_ADDRESS == "" || ACCOUNT_CAIRO_VERSION == 0 || PRIVATE_KEY == "" {
+		fmt.Println("Please set the const values before running the on-chain example")
+		return
+	}
+
+	provider, err := rpc.NewProvider(RPC_URL)
+	if err != nil {
+		fmt.Println("Error creating RPC provider:", err)
+		return
+	}
+
+	ks := account.NewMemKeystore()
+	privKeyBI, ok := new(big.Int).SetString(PRIVATE_KEY, 0)
+	if !ok {
+		fmt.Println("Error parsing private key")
+		return
+	}
+	ks.Put("", privKeyBI)
+
+	accountAddressInFelt, err := utils.HexToFelt(ACCOUNT_ADDRESS)
+	if err != nil {
+		fmt.Println("Error parsing account address")
+		return
+	}
+
+	accnt, err := account.NewAccount(
+		provider,
+		accountAddressInFelt,
+		"",
+		ks,
+		ACCOUNT_CAIRO_VERSION,
+	)
+	if err != nil {
+		fmt.Println("Error creating account:", err)
+		return
+	}
+
+	//--------------------------------------------------------------------------
+	// Message without public key
+	//--------------------------------------------------------------------------
+
+	// NOTE: one can also build the typed data manually, following the fields
+	// and types defined in typedData.TypedData struct.
+	err = json.Unmarshal([]byte(typedDataContent), &ttd)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return
+	}
+
+	hash, err = ttd.GetMessageHash(accnt.AccountAddress.String())
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return
+	}
+
+	fmt.Println("\nMessage:")
+	fmt.Printf("\tMessage hash: 0x%s\n", hash.Text(16))
+
+	//--------------------------------------------------------------------------
+	// Signature and verification without public key (check on-chain)
+	//--------------------------------------------------------------------------
+
+	signature, err := accnt.Sign(context.Background(), hash)
+	if err != nil {
+		fmt.Println("Error signing message:", err)
+		return
+	}
+
+	fmt.Println("\nSignature:")
+	fmt.Printf("\tSignature: %v\n", signature)
+
+	callData := []*felt.Felt{
+		hash,
+		(&felt.Felt{}).SetUint64(uint64(len(signature))),
+	}
+
+	callData = append(callData, signature...)
+
+	tx := rpc.FunctionCall{
+		ContractAddress: accountAddressInFelt,
+		EntryPointSelector: utils.GetSelectorFromNameFelt(
+			"is_valid_signature",
+		),
+		Calldata: callData,
+	}
+
+	result, err := provider.Call(context.Background(), tx, rpc.BlockID{Tag: "latest"})
+	if err != nil {
+		fmt.Println("Error calling function:", err)
+		return
+	}
+
+	isValid2, err := hex.DecodeString(result[0].Text(16))
+	if err != nil {
+		fmt.Println("Error decoding result:", err)
+		return
+	}
+
+	fmt.Println("Signature is valid:", string(isValid2) == "VALID")
 }

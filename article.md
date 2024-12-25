@@ -1,12 +1,16 @@
 # A guide on Starknet signatures
 
+## CHANGELOG
+
+- 25.12.2024: Updated Go code due to breaking changes in the starknet.go library (>= v0.7.3)
+
 ## Abstract
 
 This article outlines the process of signing and verifying a signature on Starknet. It begins by introducing Account Abstraction and how it modifies signature verification compared to traditional blockchains like Ethereum. It then provides comprehensive code examples in TypeScript and Go for signing a message and verifying a signature using two methods available on Starknet: using the user's public key and using the user's account address.
 
 A live signature playground is available at [https://signatures.felts.xyz](https://signatures.felts.xyz)
 
-All the code examples given in this article are available in the [associated GitHub repository](https://github.com/BastienFaivre/starknet-signatures). I want to thank [Thiago](https://github.com/thiagodeev) for his help on the code snippets.
+All the code examples given in this article are available in the [associated GitHub repository](https://github.com/metacube-games/starknet-signatures). I want to thank [Thiago](https://github.com/thiagodeev) for his help on the code snippets.
 
 ## Account Abstraction
 
@@ -116,112 +120,107 @@ import (
 	"strconv"
 
 	"github.com/NethermindEth/starknet.go/curve"
-	"github.com/NethermindEth/starknet.go/typed"
+	"github.com/NethermindEth/starknet.go/typedData"
 	"github.com/NethermindEth/starknet.go/utils"
 )
 
-// NOTE: at the time of writing, starknet.go forces us to create a custom
-// message type as well as a method to format the message encoding since
-// there is no built-in generic way to encode messages.
-type MessageType struct {
-	Message string
-}
-
-// FmtDefinitionEncoding is a method that formats the encoding of the message
-func (m MessageType) FmtDefinitionEncoding(field string) (fmtEnc []*big.Int) {
-	if field == "message" {
-		if v, err := strconv.Atoi(m.Message); err == nil {
-			fmtEnc = append(fmtEnc, big.NewInt(int64(v)))
-		} else {
-			fmtEnc = append(fmtEnc, utils.UTF8StrToBig(m.Message))
-		}
+const typedDataContent = `
+{
+	"types": {
+	  	"StarkNetDomain": [
+			{ "name": "name", "type": "felt" },
+			{ "name": "chainId", "type": "felt" },
+			{ "name": "version", "type": "felt" }
+	  	],
+	  	"Message": [
+			{ "name": "message", "type": "felt" }
+	  	]
+	},
+	"primaryType": "Message",
+	"domain": {
+	  	"name": "MyDapp",
+	  	"chainId": "SN_MAIN",
+	  	"version": "0.0.1"
+	},
+	"message": {
+	  	"message": "hello world!"
 	}
-	return fmtEnc
 }
+`
 
 func main() {
-    //--------------------------------------------------------------------------
-    // Account
-    //--------------------------------------------------------------------------
-    privateKey, _ := new(big.Int).SetString("1234567890987654321", 16)
+	//--------------------------------------------------------------------------
+	// Account with public key
+	//--------------------------------------------------------------------------
+	privateKey, _ := new(big.Int).SetString("1234567890987654321", 16)
 
-    pubX, pubY, err := curve.Curve.PrivateToPoint(privateKey)
-    if err != nil {
-        fmt.Printf("Error: %s\n", err)
-        return
-    }
-    if !curve.Curve.IsOnCurve(pubX, pubY) {
-        fmt.Printf("Point is not on curve\n")
-        return
-    }
+	pubX, pubY, err := curve.Curve.PrivateToPoint(privateKey)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return
+	}
+	if !curve.Curve.IsOnCurve(pubX, pubY) {
+		fmt.Printf("Point is not on curve\n")
+		return
+	}
 
-    starknetPublicKey := pubX
+	starknetPublicKey := pubX
 
-    // IMPORTANT: this is not a standard way to retrieve the full public key, it
-    // is just for demonstration purposes as starknet.go does not provide a way
-    // to retrieve the full public key at the time of writing.
-    // Rule of thumb: never write your own cryptography code!
-    fullPublicKey := new(big.Int).SetBytes(append(append(
-        []byte{0x04},                       // 0x04 is the prefix for uncompressed public keys
-        pubX.Bytes()...), pubY.Bytes()...), // concatenate x and y coordinates
-    )
+	// IMPORTANT: this is not a standard way to retrieve the full public key, it
+	// is just for demonstration purposes as starknet.go does not provide a way
+	// to retrieve the full public key at the time of writing.
+	// Rule of thumb: never write your own cryptography code!
+	fullPublicKey := new(big.Int).SetBytes(append(append(
+		[]byte{0x04},                       // 0x04 is the prefix for uncompressed public keys
+		pubX.Bytes()...), pubY.Bytes()...), // concatenate x and y coordinates
+	)
 
-    //--------------------------------------------------------------------------
-    // Message
-    //--------------------------------------------------------------------------
+	fmt.Println("Account:")
+	fmt.Printf("\tPrivate key: 0x%s\n", privateKey.Text(16))
+	// 0x1234567890987654321
+	fmt.Printf("\tFull (uncompressed) public key: 0x%s\n", fullPublicKey.Text(16))
+	// 0x4020c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2018277bc1bc80570f859cb882ca70d52f1a0e06275e5dd704dddbbe19faadf
+	fmt.Printf("\tCoordinates of the public key: x=0x%s, y=0x%s\n", pubX.Text(16), pubY.Text(16))
+	// x=0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2, y=0x18277bc1bc80570f859cb882ca70d52f1a0e06275e5dd704dddbbe19faadf
+	fmt.Printf("\tStarknet public key: 0x%s (= x-coordinate of the public key)\n", starknetPublicKey.Text(16))
+	// 0x20c29f1c98f3320d56f01c13372c923123c35828bce54f2153aa1cfe61c44f2
 
-    types := map[string]typed.TypeDef{
-        "StarkNetDomain": {
-            Definitions: []typed.Definition{
-                {Name: "name", Type: "felt"},
-                {Name: "chainId", Type: "felt"},
-                {Name: "version", Type: "felt"},
-            },
-        },
-        "Message": {
-            Definitions: []typed.Definition{
-                {Name: "message", Type: "felt"},
-            },
-        },
-    }
+	//--------------------------------------------------------------------------
+	// Message with public key
+	//--------------------------------------------------------------------------
 
-    primaryType := "Message"
+	// NOTE: one can also build the typed data manually, following the fields
+	// and types defined in typedData.TypedData struct.
+	var ttd typedData.TypedData
+	err = json.Unmarshal([]byte(typedDataContent), &ttd)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return
+	}
 
-    domain := typed.Domain{
-        Name:    "MyDapp",
-        ChainId: "SN_MAIN",
-        Version: "0.0.1",
-    }
+	hash, err := ttd.GetMessageHash(starknetPublicKey.String())
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return
+	}
 
-    message := MessageType{
-        Message: "hello world!",
-    }
+	fmt.Println("\nMessage:")
+	fmt.Printf("\tMessage hash: 0x%s\n", hash.Text(16))
+	// 0x197093614bca282524e6b8f77de8f7dd9a9dd92ed4ea7f4f2b17f95e2bc441d
 
-    td, err := typed.NewTypedData(types, primaryType, domain)
-    if err != nil {
-        fmt.Println("Error creating TypedData:", err)
-        return
-    }
+	//--------------------------------------------------------------------------
+	// Signature and verification with public key (check locally on curve)
+	//--------------------------------------------------------------------------
 
-    hash, err := td.GetMessageHash(starknetPublicKey, message, curve.Curve)
-    if err != nil {
-        fmt.Println("Error getting message hash:", err)
-        return
-    }
-
-    //--------------------------------------------------------------------------
-    // Signature
-    //--------------------------------------------------------------------------
-
-    r, s, err := curve.Curve.Sign(hash, privateKey)
-    if err != nil {
-        fmt.Println("Error signing message:", err)
-        return
-    }
+	r, s, err := curve.Curve.Sign(hash.BigInt(new(big.Int)), privateKey)
+	if err != nil {
+		fmt.Println("Error signing message:", err)
+		return
+	}
 }
 ```
 
-If you are developing a dApp, you won't have access to the user's private key. Instead, you can use the starknet.js library to sign the message. The code will interact with the browser wallet (typically ArgentX or Braavos) to sign the message. You can find a live demo at [https://signatures.felts.xyz](https://signatures.felts.xyz). Here is the simplified code to sign a message in TypeScript using the browser wallet (full code available in the [GitHub repository](https://github.com/BastienFaivre/starknet-signatures)):
+If you are developing a dApp, you won't have access to the user's private key. Instead, you can use the starknet.js library to sign the message. The code will interact with the browser wallet (typically ArgentX or Braavos) to sign the message. You can find a live demo at [https://signatures.felts.xyz](https://signatures.felts.xyz). Here is the simplified code to sign a message in TypeScript using the browser wallet (full code available in the [GitHub repository](https://github.com/metacube-games/starknet-signatures)):
 
 ```typescript
 import { connect } from "get-starknet";
@@ -273,7 +272,7 @@ const isValid = ec.starkCurve.verify(signature, messageHash, fullPublicKey)
 Go:
 ```go
 // following the previous code
-isValid := curve.Curve.Verify(hash, r, s, starknetPublicKey, pubY)
+isValid := curve.Curve.Verify(hash.BigInt(new(big.Int)), r, s, starknetPublicKey, pubY)
 ```
 
 #### Using the User's Address
@@ -324,25 +323,25 @@ if err != nil {
 }
 
 // we import the account address, r, and s values from the frontend (typescript)
-accountAddress, _ := new(big.Int).SetString("0xabc123", 16)
-r, _ := new(big.Int).SetString("0xabc123", 16)
-s, _ := new(big.Int).SetString("0xabc123", 16)
+accountAddressInFelt, _ := utils.HexToFelt("0xabc123")
+r, _ := utils.HexToFelt("0xabc123")
+s, _ := utils.HexToFelt("0xabc123")
 
-// we need to get the message hash, but, this time, we use the account address instead of the public key. `message` is the same as the in the previous Go code
-hash, err := td.GetMessageHash(accountAddress, message, curve.Curve)
+// we need to get the message hash, but, this time, we use the account address instead of the public key. `tdd` is the same as the in the previous Go code
+hash, err := ttd.GetMessageHash("0xabc123") // account address
 if err != nil {
     // handle error
 }
 
 callData := []*felt.Felt{
-    utils.BigIntToFelt(hash),
+    hash,
     (&felt.Felt{}).SetUint64(2), // size of the array [r, s]
     utils.BigIntToFelt(r),
     utils.BigIntToFelt(s),
 }
 
 tx := rpc.FunctionCall{
-    ContractAddress: utils.BigIntToFelt(accountAddress),
+    ContractAddress: accountAddressInFelt,
     EntryPointSelector: utils.GetSelectorFromNameFelt(
         "is_valid_signature",
     ),
@@ -374,7 +373,7 @@ Make sure that the message structure is the same on the frontend and backend to 
 
 ## Conclusion
 
-I hope that this article provided you with a comprehensive understanding of the signatures on Starknet and helped you implement it in your applications. If you have any questions or feedback, feel free to comment or reach out to me on [Twitter](https://twitter.com/BastienFaivre) or [GitHub](https://github.com/BastienFaivre). Thank you for reading! 
+I hope that this article provided you with a comprehensive understanding of the signatures on Starknet and helped you implement it in your applications. If you have any questions or feedback, feel free to comment or reach out to me on [Twitter](https://twitter.com/std_lock_guard) or [GitHub](https://github.com/BastienFaivre). Thank you for reading! 
 
 Sources:
 - [https://book.starknet.io/ch04-00-account-abstraction.html](https://book.starknet.io/ch04-00-account-abstraction.html)
