@@ -177,9 +177,9 @@ const App: React.FC = () => {
           </IconButton>
         </Stack>
         {
-          temp && <Box>
+          temp && <Box alignItems={"center"}>
             <Typography variant="caption">Temp</Typography>
-            <Typography>{temp.join(", ")}</Typography>
+            <Typography variant="caption">{temp.join(", ")}</Typography>
           </Box>
         }
         <AceEditor
