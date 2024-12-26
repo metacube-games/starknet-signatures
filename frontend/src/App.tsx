@@ -43,6 +43,8 @@ const App: React.FC = () => {
   const [verificationResult, setVerificationResult] = useState<boolean | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
 
+  const [temp, setTemp] = useState<string[] | null>(null);
+
   const connectButtonClicked = async () => {
     setConnectIsLoading(true);
     try {
@@ -88,7 +90,7 @@ const App: React.FC = () => {
         setCopied([false, false]);
         setSignatures([{ r: BigInt(sig[0]), s: BigInt(sig[1]) } as WeierstrassSignatureType]);
       } else {
-        alert(sig);
+        setTemp(sig);
         // Likely Argent signature
         const numberOfSignatures = sig[0];
         if (sig.length !== 1 + 4 * numberOfSignatures) throw new Error("Invalid signature format");
@@ -174,6 +176,12 @@ const App: React.FC = () => {
             <OpenInNewIcon />
           </IconButton>
         </Stack>
+        {
+          temp && <Box>
+            <Typography variant="caption">Temp</Typography>
+            <Typography>{temp.join(", ")}</Typography>
+          </Box>
+        }
         <AceEditor
           mode="json"
           name="typed-data-editor"
