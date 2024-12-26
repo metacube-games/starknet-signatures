@@ -181,7 +181,7 @@ const App: React.FC = () => {
             <Typography variant="caption">Temp</Typography>
             {temp.map((item, index) => (
               <Typography key={index} variant="caption">
-                {item.length > 30 ? `${item.slice(0, 5)}...${item.slice(-5)}` : item}
+                {BigInt(item).toString(16).length > 30 ? `${BigInt(item).toString(16).slice(0, 5)}...${BigInt(item).toString(16).slice(-5)}` : BigInt(item).toString(16)}
               </Typography>
             ))}
           </Stack>
