@@ -93,13 +93,23 @@ const App: React.FC = () => {
         setTemp(sig);
         // Likely Argent signature
         const numberOfSignatures = sig[0];
-        if (sig.length !== 1 + 4 * numberOfSignatures) throw new Error("Invalid signature format");
-        let signatures: WeierstrassSignatureType[] = [];
-        for (let i = 0; i < numberOfSignatures; i++) {
-          signatures.push({ r: BigInt(sig[3 + 4 * i]), s: BigInt(sig[4 + 4 * i]) } as WeierstrassSignatureType);
+        if (sig.length === 1 + 4 * numberOfSignatures) {
+          let signatures: WeierstrassSignatureType[] = [];
+          for (let i = 0; i < numberOfSignatures; i++) {
+            signatures.push({ r: BigInt(sig[3 + 4 * i]), s: BigInt(sig[4 + 4 * i]) } as WeierstrassSignatureType);
+          }
+          setCopied(new Array(numberOfSignatures * 2).fill(false));
+          setSignatures(signatures);
+        } else {
+          // Likely Argent mobile signature
+          if (sig.length % 2 !== 0) throw new Error("Invalid signature");
+          let signatures: WeierstrassSignatureType[] = [];
+          for (let i = 0; i < sig.length / 2; i++) {
+            signatures.push({ r: BigInt(sig[2 * i]), s: BigInt(sig[2 * i + 1]) } as WeierstrassSignatureType);
+          }
+          setCopied(new Array(sig.length).fill(false));
+          setSignatures(signatures);
         }
-        setCopied(new Array(numberOfSignatures * 2).fill(false));
-        setSignatures(signatures);
       }
     } catch (error: any) {
       setSignatureError(error.message);
