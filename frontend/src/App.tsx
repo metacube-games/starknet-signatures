@@ -43,8 +43,6 @@ const App: React.FC = () => {
   const [verificationResult, setVerificationResult] = useState<boolean | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
 
-  const [temp, setTemp] = useState<string[] | null>(null);
-
   const connectButtonClicked = async () => {
     setConnectIsLoading(true);
     try {
@@ -90,7 +88,6 @@ const App: React.FC = () => {
         setCopied([false, false]);
         setSignatures([{ r: BigInt(sig[0]), s: BigInt(sig[1]) } as WeierstrassSignatureType]);
       } else {
-        setTemp(sig);
         // Likely Argent signature
         const numberOfSignatures = sig[0];
         if (sig.length === 1 + 4 * numberOfSignatures) {
@@ -186,16 +183,6 @@ const App: React.FC = () => {
             <OpenInNewIcon />
           </IconButton>
         </Stack>
-        {temp && (
-          <Stack direction="column" spacing={1} alignItems="center">
-            <Typography variant="caption">Temp</Typography>
-            {temp.map((item, index) => (
-              <Typography key={index} variant="caption">
-                {BigInt(item).toString(16).length > 30 ? `${BigInt(item).toString(16).slice(0, 5)}...${BigInt(item).toString(16).slice(-5)}` : BigInt(item).toString(16)}
-              </Typography>
-            ))}
-          </Stack>
-        )}
         <AceEditor
           mode="json"
           name="typed-data-editor"
