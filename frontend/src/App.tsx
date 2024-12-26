@@ -20,7 +20,7 @@ const DEFAULT_TYPED_DATA = `{
   "primaryType": "Message",
   "domain": {
     "name": "MyDapp",
-    "chainId": "SN_MAIN",
+    "chainId": "0x534e5f4d41494e",
     "version": "0.0.1"
   },
   "message": {
