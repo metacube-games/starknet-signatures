@@ -176,12 +176,16 @@ const App: React.FC = () => {
             <OpenInNewIcon />
           </IconButton>
         </Stack>
-        {
-          temp && <Box alignItems={"center"}>
+        {temp && (
+          <Stack direction="column" spacing={1} alignItems="center">
             <Typography variant="caption">Temp</Typography>
-            <Typography variant="caption">{temp.join(", ")}</Typography>
-          </Box>
-        }
+            {temp.map((item, index) => (
+              <Typography key={index} variant="caption">
+                {item.length > 30 ? `${item.slice(0, 5)}...${item.slice(-5)}` : item}
+              </Typography>
+            ))}
+          </Stack>
+        )}
         <AceEditor
           mode="json"
           name="typed-data-editor"
@@ -315,7 +319,7 @@ const App: React.FC = () => {
           <XIcon />
         </IconButton>
       </Stack>
-    </Stack>
+    </Stack >
   );
 };
 
