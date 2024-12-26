@@ -88,6 +88,7 @@ const App: React.FC = () => {
         setCopied([false, false]);
         setSignatures([{ r: BigInt(sig[0]), s: BigInt(sig[1]) } as WeierstrassSignatureType]);
       } else {
+        alert(sig);
         // Likely Argent signature
         const numberOfSignatures = sig[0];
         if (sig.length !== 1 + 4 * numberOfSignatures) throw new Error("Invalid signature format");
