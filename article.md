@@ -3,6 +3,7 @@
 ## CHANGELOG
 
 - 25.12.2024: Updated Go code due to breaking changes in the starknet.go library (>= v0.7.3)
+- 28.12.2024: Updated article to work with any wallet type.
 
 ## Abstract
 
@@ -251,9 +252,9 @@ const messageStructure: TypedData = {
 const signature = await starknet.account.signMessage(messageStructure, { skipDeploy: true });
 ```
 
-Once the message is signed, the signature is obtained in the form of `r`, `s`, and `v`. The `v` value is the recovery id, which can be used to recover the public key from the signature (see [Wikipedia](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm#Public_key_recovery) for more information). However, this recovery process cannot be fully trusted for verifying a signature unless the signer's public key is known beforehand. The `r` and `s` values are the signature values used to verify the signature.
+The obtained signature is an array of strings. It is important to notice that each wallet will have its unique signature format (use the [signatures playground](https://signatures.felts.xyz) to convince yourself). But, this is not important because we do not have to interact with the content of the signature (aka the string array). Indeed, please continue reading to the signature verification section to learn how is this string array used.
 
-IMPORTANT: Depending on the browser wallet, the signature might only return `r` and `s` values. The `v` value is not always provided.
+However, most signature formats will include an ECDSA signature in the form of two values: `r` and `s`. Note that some wallets might do multiple ECDSA signatures!
 
 ### Verifying a Signature
 
@@ -281,7 +282,7 @@ NOTE: This method works only if the user's account smart contract has been deplo
 
 IMPORTANT: Avoid using your own private key when experimenting with the code. Always sign transactions with the browser wallet.
 
-If the user's public key is not available, the signature can be verified using the user's account smart contract. By the [standard SRC-6](https://book.starknet.io/ch04-01-accounts.html#account-contract-interface), the user account smart contract has a function `fn is_valid_signature(hash: felt252, signature: Array<felt252>) -> felt252;` that takes the hash of the message and the signature (in the form of an array of 2 felt252 values: `r` and `s`) and returns the string `VALID` if the signature is valid, or fails otherwise. Here is the code to verify a signature using the user's account address in TypeScript and Go.
+If the user's public key is unavailable, the signature can be verified using the user's account smart contract. By the [standard SRC-6](https://docs.starknet.io/architecture-and-concepts/accounts/approach/), the user account smart contract has a function `fn is_valid_signature(hash: felt252, signature: Array<felt252>) -> felt252;` that takes the hash of the message and the signature (in the form of a string array) and returns the string `VALID` if the signature is valid, or fails otherwise. Here is the code to verify a signature using the user's account address in TypeScript and Go.
 
 TypeScript (simplified for readability):
 ```typescript
@@ -322,10 +323,9 @@ if err != nil {
     // handle error
 }
 
-// we import the account address, r, and s values from the frontend (typescript)
+// we import the account address and the signature from the frontend (typescript)
 accountAddressInFelt, _ := utils.HexToFelt("0xabc123")
-r, _ := utils.HexToFelt("0xabc123")
-s, _ := utils.HexToFelt("0xabc123")
+signature := []string{"0xabc123", "0x123abc"}
 
 // we need to get the message hash, but, this time, we use the account address instead of the public key. `tdd` is the same as the in the previous Go code
 hash, err := ttd.GetMessageHash("0xabc123") // account address
@@ -335,9 +335,14 @@ if err != nil {
 
 callData := []*felt.Felt{
     hash,
-    (&felt.Felt{}).SetUint64(2), // size of the array [r, s]
-    utils.BigIntToFelt(r),
-    utils.BigIntToFelt(s),
+    (&felt.Felt{}).SetUint64(uint64(len(signature))), // size of the string array
+}
+
+for _, value := range signature {
+    callData = append(
+        callData,
+        utils.HexToFelt(value),
+	)
 }
 
 tx := rpc.FunctionCall{
@@ -353,12 +358,14 @@ if err != nil {
     // handle error
 }
 
-isValid, err := hex.DecodeString(result[0].Text(16))
-if err != nil {
+resultHex := result[0].Text(16)
+
+isValid, err := hex.DecodeString(resultHex)
+if err != nil && resultHex != "1" {
     // handle error
 }
 
-fmt.Println("Signature is valid:", string(isValid) == "VALID")
+fmt.Println("Signature is valid:", string(isValid) == "VALID" || resultHex == "1")
 ```
 
 ## Usage
@@ -366,7 +373,7 @@ fmt.Println("Signature is valid:", string(isValid) == "VALID")
 Signatures can be used in various applications, with user authentication in web3 dApps being a primary use case. To achieve this, use the structure provided above for signature verification using the user's account address. Here is the complete workflow:
 
 1. The user signs a message with the browser wallet.
-2. Send the user address, message, and signature (r, s) to the backend.
+2. Send the user address, message, and signature (string array) to the backend.
 3. The backend verifies the signature using the user's account smart contract.
 
 Make sure that the message structure is the same on the frontend and backend to ensure the signature is verified correctly.
@@ -376,9 +383,8 @@ Make sure that the message structure is the same on the frontend and backend to 
 I hope that this article provided you with a comprehensive understanding of the signatures on Starknet and helped you implement it in your applications. If you have any questions or feedback, feel free to comment or reach out to me on [Twitter](https://twitter.com/std_lock_guard) or [GitHub](https://github.com/BastienFaivre). Thank you for reading! 
 
 Sources:
-- [https://book.starknet.io/ch04-00-account-abstraction.html](https://book.starknet.io/ch04-00-account-abstraction.html)
+- [https://docs.starknet.io/architecture-and-concepts/accounts/approach/](https://docs.starknet.io/architecture-and-concepts/accounts/approach/)
 - [https://www.starknetjs.com/docs/guides/signature/](https://www.starknetjs.com/docs/guides/signature/)
 - [https://docs.starknet.io/architecture-and-concepts/accounts/introduction/](https://docs.starknet.io/architecture-and-concepts/accounts/introduction/)
-- [https://docs.openzeppelin.com/contracts-cairo/0.4.0/accounts#isvalidsignature](https://docs.openzeppelin.com/contracts-cairo/0.4.0/accounts#isvalidsignature)
 - [https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)
 - [https://eips.ethereum.org/EIPS/eip-712](https://eips.ethereum.org/EIPS/eip-712)
