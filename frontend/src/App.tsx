@@ -98,8 +98,6 @@ const App: React.FC = () => {
       if (!accountObject) throw new Error("Account not connected");
       if (!signature) throw new Error("Signature not provided");
 
-      console.log("signature", signature);
-
       const result = await accountObject.verifyMessage(JSON.parse(typedData), signature.sig);
       setVerificationResult(result);
     } catch (error: any) {
@@ -219,9 +217,16 @@ const App: React.FC = () => {
               ),
             }}
             onChange={(e) => {
-              const newSignatures = [...signatures];
-              newSignatures[index] = { ...sig, r: BigInt(e.target.value) } as WeierstrassSignatureType;
-              setSignatures(newSignatures);
+              try {
+                BigInt(e.target.value);
+              } catch {
+                return;
+              }
+              setSignature((prev) => {
+                const newSignature = { ...prev! };
+                newSignature.sig[index] = e.target.value;
+                return newSignature;
+              });
             }}
             sx={{ "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: "#000000" } }}
           />
