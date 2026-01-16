@@ -3,7 +3,7 @@ import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, Grid, F
 import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, Language as LanguageIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
 import AceEditor from "react-ace";
 import 'brace/mode/json';
-import { connect, disconnect } from "get-starknet";
+import { connect, disconnect } from "@starknet-io/get-starknet";
 import { RpcProvider, AccountInterface, Signature, verifyMessageInStarknet } from "starknet";
 import { LoadingButton } from "@mui/lab";
 
@@ -48,8 +48,22 @@ const App: React.FC = () => {
         const starknet = await connect({ modalMode: "alwaysAsk" });
         if (!starknet) throw new Error("Failed to connect wallet");
 
+        const accounts = await starknet.request({ type: "wallet_requestAccounts" });
+        if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+
+        const accountInterface: AccountInterface = {
+          address: accounts[0],
+          signMessage: async (typedData: any) => {
+            const result = await starknet.request({
+              type: "wallet_signTypedData",
+              params: typedData
+            });
+            return result;
+          }
+        } as AccountInterface;
+
         setWalletConnected(true);
-        setAccount(starknet.account);
+        setAccount(accountInterface);
       } else {
         await disconnect();
         setWalletConnected(false);
@@ -127,9 +141,26 @@ const App: React.FC = () => {
     const reconnectWallet = async () => {
       try {
         const starknet = await connect({ modalMode: "neverAsk" });
-        if (starknet?.isConnected) {
-          setWalletConnected(true);
-          setAccount(starknet.account);
+        if (starknet) {
+          const permissions = await starknet.request({ type: "wallet_getPermissions" });
+          if (permissions && permissions.length > 0) {
+            const accounts = await starknet.request({ type: "wallet_requestAccounts" });
+            if (accounts && accounts.length > 0) {
+              const accountInterface: AccountInterface = {
+                address: accounts[0],
+                signMessage: async (typedData: any) => {
+                  const result = await starknet.request({
+                    type: "wallet_signTypedData",
+                    params: typedData
+                  });
+                  return result;
+                }
+              } as AccountInterface;
+
+              setWalletConnected(true);
+              setAccount(accountInterface);
+            }
+          }
         }
       } catch (error) {
         console.debug("No wallet to reconnect");
