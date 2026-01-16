@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, Grid } from "@mui/material";
-import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, X as XIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
+import React, { useState, useEffect } from "react";
+import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, Grid, FormHelperText, Link } from "@mui/material";
+import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, Language as LanguageIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
 import AceEditor from "react-ace";
 import 'brace/mode/json';
 import { connect, disconnect } from "get-starknet";
-import { Account, RpcProvider, WeierstrassSignatureType } from "starknet";
-import { AccountInterface } from "starknet4";
+import { RpcProvider, AccountInterface, Signature, verifyMessageInStarknet } from "starknet";
 import { LoadingButton } from "@mui/lab";
 
 const DEFAULT_TYPED_DATA = `{
@@ -29,16 +28,15 @@ const DEFAULT_TYPED_DATA = `{
 }`;
 
 const App: React.FC = () => {
-  const [starknetProvider, setStarknetProvider] = useState<RpcProvider | null>(null);
   const [connectIsLoading, setConnectIsLoading] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
   const [account, setAccount] = useState<AccountInterface | null>(null);
-  const [accountObject, setAccountObject] = useState<Account | null>(null);
   const [typedData, setTypedData] = useState<string>(DEFAULT_TYPED_DATA);
   const [signatureIsLoading, setSignatureIsLoading] = useState(false);
   const [signature, setSignature] = useState<{ sig: string[], copied: boolean[] } | null>(null);
   const [copied, setCopied] = useState<boolean[]>(new Array(10).fill(false)); // Dumb solution to avoid React controlled error
   const [signatureError, setSignatureError] = useState<string | null>(null);
+  const [rpcUrl, setRpcUrl] = useState<string>("https://1rpc.io/starknet");
   const [verificationIsLoading, setVerificationIsLoading] = useState(false);
   const [verificationResult, setVerificationResult] = useState<boolean | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -52,12 +50,10 @@ const App: React.FC = () => {
 
         setWalletConnected(true);
         setAccount(starknet.account);
-        setAccountObject(new Account(starknetProvider!, starknet.account.address, '0x123'));
       } else {
         await disconnect();
         setWalletConnected(false);
         setAccount(null);
-        setAccountObject(null);
         setSignature(null);
         setCopied(new Array(10).fill(false)); // Dumb solution to avoid React controlled error
         setSignatureError(null);
@@ -80,10 +76,11 @@ const App: React.FC = () => {
     try {
       if (!account) throw new Error("Account not connected");
 
-      const sig = await account.signMessage(JSON.parse(typedData), { skipDeploy: true });
+      const sig = await account.signMessage(JSON.parse(typedData));
       if (!sig) throw new Error("Failed to sign message");
 
-      setSignature({ sig, copied: new Array(sig.length).fill(false) });
+      const sigArray = Array.isArray(sig) ? sig : [sig.r, sig.s].filter(Boolean).map(String);
+      setSignature({ sig: sigArray, copied: new Array(sigArray.length).fill(false) });
     } catch (error: any) {
       setSignatureError(error.message);
     }
@@ -95,22 +92,52 @@ const App: React.FC = () => {
     setVerificationResult(null);
     setVerificationError(null);
     try {
-      if (!accountObject) throw new Error("Account not connected");
+      if (!account) throw new Error("Account not connected");
       if (!signature) throw new Error("Signature not provided");
+      if (!rpcUrl) throw new Error("RPC URL not provided");
 
-      const result = await accountObject.verifyMessage(JSON.parse(typedData), signature.sig);
-      setVerificationResult(result);
+      const typedDataObj = JSON.parse(typedData);
+
+      const provider = new RpcProvider({ nodeUrl: rpcUrl });
+
+      const isValid = await verifyMessageInStarknet(
+        provider,
+        typedDataObj,
+        signature.sig as Signature,
+        account.address
+      );
+
+      setVerificationResult(isValid);
     } catch (error: any) {
       setVerificationError(error.message);
     }
     setVerificationIsLoading(false);
   };
 
-  useEffect(() => {
-    if (!starknetProvider) {
-      setStarknetProvider(new RpcProvider({ nodeUrl: "https://starknet-mainnet.public.blastapi.io/rpc/v0_7" }));
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return url.startsWith('http://') || url.startsWith('https://');
+    } catch {
+      return false;
     }
-  }, [starknetProvider]);
+  };
+
+  useEffect(() => {
+    const reconnectWallet = async () => {
+      try {
+        const starknet = await connect({ modalMode: "neverAsk" });
+        if (starknet?.isConnected) {
+          setWalletConnected(true);
+          setAccount(starknet.account);
+        }
+      } catch (error) {
+        console.debug("No wallet to reconnect");
+      }
+    };
+
+    reconnectWallet();
+  }, []);
 
   return (
     <Stack
@@ -133,7 +160,6 @@ const App: React.FC = () => {
           <LoadingButton
             variant="contained"
             color="primary"
-            disabled={starknetProvider === null}
             loading={connectIsLoading}
             onClick={connectButtonClicked}
             startIcon={<WalletIcon />}
@@ -231,10 +257,32 @@ const App: React.FC = () => {
             sx={{ "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: "#000000" } }}
           />
         )) : null}
+        <Stack spacing={0.5} width="100%">
+          <TextField
+            label="RPC URL for verification"
+            placeholder="https://"
+            fullWidth
+            value={rpcUrl}
+            onChange={(e) => setRpcUrl(e.target.value)}
+            error={rpcUrl.length > 0 && !isValidUrl(rpcUrl)}
+          />
+          <FormHelperText sx={{ textAlign: 'center' }}>
+            Enter your{" "}
+            <Link
+              href="https://www.comparenodes.com/library/public-endpoints/starknet/"
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="hover"
+            >
+              RPC node URL
+            </Link>{" "}
+            to verify the signature on-chain
+          </FormHelperText>
+        </Stack>
         <LoadingButton
           variant="contained"
           color="primary"
-          disabled={!walletConnected || !signature}
+          disabled={!walletConnected || !signature || !isValidUrl(rpcUrl)}
           loading={verificationIsLoading}
           onClick={verifyButtonClicked}
           startIcon={<CloudIcon />}
@@ -259,8 +307,8 @@ const App: React.FC = () => {
         <IconButton href="https://github.com/BastienFaivre" target="_blank" rel="noopener noreferrer">
           <GitHubIcon />
         </IconButton>
-        <IconButton href="https://x.com/std_lock_guard" target="_blank" rel="noopener noreferrer">
-          <XIcon />
+        <IconButton href="https://bastienfaivre.com" target="_blank" rel="noopener noreferrer">
+          <LanguageIcon />
         </IconButton>
       </Stack>
     </Stack >
