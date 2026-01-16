@@ -11,7 +11,7 @@ import (
 	"github.com/NethermindEth/starknet.go/account"
 	"github.com/NethermindEth/starknet.go/curve"
 	"github.com/NethermindEth/starknet.go/rpc"
-	"github.com/NethermindEth/starknet.go/typedData"
+	"github.com/NethermindEth/starknet.go/typeddata"
 	"github.com/NethermindEth/starknet.go/utils"
 )
 
@@ -45,15 +45,7 @@ func main() {
 	//--------------------------------------------------------------------------
 	privateKey, _ := new(big.Int).SetString("1234567890987654321", 16)
 
-	pubX, pubY, err := curve.Curve.PrivateToPoint(privateKey)
-	if err != nil {
-		fmt.Printf("Error: %s\n", err)
-		return
-	}
-	if !curve.Curve.IsOnCurve(pubX, pubY) {
-		fmt.Printf("Point is not on curve\n")
-		return
-	}
+	pubX, pubY := curve.PrivateKeyToPoint(privateKey)
 
 	starknetPublicKey := pubX
 
@@ -81,9 +73,9 @@ func main() {
 	//--------------------------------------------------------------------------
 
 	// NOTE: one can also build the typed data manually, following the fields
-	// and types defined in typedData.TypedData struct.
-	var ttd typedData.TypedData
-	err = json.Unmarshal([]byte(typedDataContent), &ttd)
+	// and types defined in typeddata.TypedData struct.
+	var ttd typeddata.TypedData
+	err := json.Unmarshal([]byte(typedDataContent), &ttd)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
@@ -103,17 +95,21 @@ func main() {
 	// Signature and verification with public key (check locally on curve)
 	//--------------------------------------------------------------------------
 
-	r, s, err := curve.Curve.Sign(hash.BigInt(new(big.Int)), privateKey)
+	r, s, err := curve.Sign(hash.BigInt(new(big.Int)), privateKey)
 	if err != nil {
 		fmt.Println("Error signing message:", err)
 		return
 	}
 
-	isValid := curve.Curve.Verify(hash.BigInt(new(big.Int)), r, s, starknetPublicKey, pubY)
+	isValid, err := curve.Verify(hash.BigInt(new(big.Int)), r, s, starknetPublicKey)
+	if err != nil {
+		fmt.Println("Error verifying signature:", err)
+		return
+	}
 
 	fmt.Println("\nSignature:")
 	fmt.Printf("\tSignature: r=0x%s, s=0x%s\n", r.Text(16), s.Text(16))
-	// r=0x59e1a24dc86990b8c1210d6e18d5641e6b94828d595b0d98279052f013e9945, s=0x72a50af8139178dddbb4b34ef2567fa78dcd44df8307cc47a2e39a6090e46eb
+	// r=0x6c6757e21686c4763305c386c9473f7d36c7ffd0c3b72e1985e6f768e29d4f9, s=0x123cb0c07a894bc4c42f119562e5032a4bcaef9299dd9273eeda218f7d066a8
 	fmt.Printf("\tSignature is valid: %t\n", isValid)
 	// true
 
@@ -132,7 +128,8 @@ func main() {
 		return
 	}
 
-	provider, err := rpc.NewProvider(RPC_URL)
+	ctx := context.Background()
+	provider, err := rpc.NewProvider(ctx, RPC_URL)
 	if err != nil {
 		fmt.Println("Error creating RPC provider:", err)
 		return
@@ -169,14 +166,14 @@ func main() {
 	//--------------------------------------------------------------------------
 
 	// NOTE: one can also build the typed data manually, following the fields
-	// and types defined in typedData.TypedData struct.
+	// and types defined in typeddata.TypedData struct.
 	err = json.Unmarshal([]byte(typedDataContent), &ttd)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
 	}
 
-	hash, err = ttd.GetMessageHash(accnt.AccountAddress.String())
+	hash, err = ttd.GetMessageHash(accnt.Address.String())
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
@@ -206,11 +203,9 @@ func main() {
 	callData = append(callData, signature...)
 
 	tx := rpc.FunctionCall{
-		ContractAddress: accountAddressInFelt,
-		EntryPointSelector: utils.GetSelectorFromNameFelt(
-			"is_valid_signature",
-		),
-		Calldata: callData,
+		ContractAddress:    accountAddressInFelt,
+		EntryPointSelector: utils.GetSelectorFromNameFelt("is_valid_signature"),
+		Calldata:           callData,
 	}
 
 	result, err := provider.Call(context.Background(), tx, rpc.BlockID{Tag: "latest"})
