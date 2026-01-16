@@ -2,8 +2,9 @@
 
 ## CHANGELOG
 
-- 25.12.2024: Updated Go code due to breaking changes in the starknet.go library (>= v0.7.3)
+- 16.01.2026: Updated code snippets to match latest library versions.
 - 28.12.2024: Updated article to work with any wallet type.
+- 25.12.2024: Updated Go code due to breaking changes in the starknet.go library (>= v0.7.3)
 
 ## Abstract
 
@@ -116,13 +117,12 @@ Go:
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/NethermindEth/starknet.go/curve"
-	"github.com/NethermindEth/starknet.go/typedData"
-	"github.com/NethermindEth/starknet.go/utils"
+	"github.com/NethermindEth/starknet.go/typeddata"
 )
 
 const typedDataContent = `
@@ -155,15 +155,7 @@ func main() {
 	//--------------------------------------------------------------------------
 	privateKey, _ := new(big.Int).SetString("1234567890987654321", 16)
 
-	pubX, pubY, err := curve.Curve.PrivateToPoint(privateKey)
-	if err != nil {
-		fmt.Printf("Error: %s\n", err)
-		return
-	}
-	if !curve.Curve.IsOnCurve(pubX, pubY) {
-		fmt.Printf("Point is not on curve\n")
-		return
-	}
+	pubX, pubY := curve.PrivateKeyToPoint(privateKey)
 
 	starknetPublicKey := pubX
 
@@ -191,9 +183,9 @@ func main() {
 	//--------------------------------------------------------------------------
 
 	// NOTE: one can also build the typed data manually, following the fields
-	// and types defined in typedData.TypedData struct.
-	var ttd typedData.TypedData
-	err = json.Unmarshal([]byte(typedDataContent), &ttd)
+	// and types defined in typeddata.TypedData struct.
+	var ttd typeddata.TypedData
+	err := json.Unmarshal([]byte(typedDataContent), &ttd)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
@@ -213,7 +205,7 @@ func main() {
 	// Signature and verification with public key (check locally on curve)
 	//--------------------------------------------------------------------------
 
-	r, s, err := curve.Curve.Sign(hash.BigInt(new(big.Int)), privateKey)
+	r, s, err := curve.Sign(hash.BigInt(new(big.Int)), privateKey)
 	if err != nil {
 		fmt.Println("Error signing message:", err)
 		return
@@ -224,9 +216,13 @@ func main() {
 If you are developing a dApp, you won't have access to the user's private key. Instead, you can use the starknet.js library to sign the message. The code will interact with the browser wallet (typically ArgentX or Braavos) to sign the message. You can find a live demo at [https://signatures.felts.xyz](https://signatures.felts.xyz). Here is the simplified code to sign a message in TypeScript using the browser wallet (full code available in the [GitHub repository](https://github.com/metacube-games/starknet-signatures)):
 
 ```typescript
-import { connect } from "get-starknet";
+import { connect } from "@starknet-io/get-starknet";
 
 const starknet = await connect(); // Connect to the browser wallet
+
+// Request accounts from the wallet
+const accounts = await starknet.request({ type: "wallet_requestAccounts" });
+const accountAddress = accounts[0];
 
 const messageStructure: TypedData = {
     types: {
@@ -248,8 +244,11 @@ const messageStructure: TypedData = {
     },
 };
 
-// skipDeploy allows not-deployed accounts to sign messages
-const signature = await starknet.account.signMessage(messageStructure, { skipDeploy: true });
+// Sign the message using the wallet
+const signature = await starknet.request({
+    type: "wallet_signTypedData",
+    params: messageStructure
+});
 ```
 
 The obtained signature is an array of strings. It is important to notice that each wallet will have its unique signature format (use the [signatures playground](https://signatures.felts.xyz) to convince yourself). But, this is not important because we do not have to interact with the content of the signature (aka the string array). Indeed, please continue reading to the signature verification section to learn how is this string array used.
@@ -273,7 +272,11 @@ const isValid = ec.starkCurve.verify(signature, messageHash, fullPublicKey)
 Go:
 ```go
 // following the previous code
-isValid := curve.Curve.Verify(hash.BigInt(new(big.Int)), r, s, starknetPublicKey, pubY)
+isValid, err := curve.Verify(hash.BigInt(new(big.Int)), r, s, starknetPublicKey)
+if err != nil {
+    fmt.Println("Error verifying signature:", err)
+    return
+}
 ```
 
 #### Using the User's Address
@@ -286,20 +289,19 @@ If the user's public key is unavailable, the signature can be verified using the
 
 TypeScript (simplified for readability):
 ```typescript
-import { Account, RpcProvider } from "starknet";
+import { RpcProvider, verifyMessageInStarknet, Signature } from "starknet";
 
 const provider = new RpcProvider({ nodeUrl: "https://your-rpc-provider-url" });
 
-// '0x123' is a placeholder for the user's private key since we don't have access to it
-const account = new Account(provider, address, '0x123')
+// messageStructure, signature, and accountAddress are obtained from the previous code when signing the message with the browser wallet
+const isValid = await verifyMessageInStarknet(
+    provider,
+    messageStructure,
+    signature as Signature,
+    accountAddress
+);
 
-try {
-    // messageStructure and signature are obtained from the previous code when signing the message with the browser wallet
-    const isValid = account.verifyMessage(messageStructure, signature)
-    console.log("Signature is valid:", isValid)
-} catch (error) {
-    console.error("Error verifying the signature:", error);
-}
+console.log("Signature is valid:", isValid);
 ```
 
 Go (simplified for readability):
@@ -308,26 +310,30 @@ import (
     "context"
     "encoding/hex"
     "fmt"
-    "math/big"
 
     "github.com/NethermindEth/juno/core/felt"
-    "github.com/NethermindEth/starknet.go/curve"
     "github.com/NethermindEth/starknet.go/rpc"
     "github.com/NethermindEth/starknet.go/utils"
 )
 
 ...
 
-provider, err := rpc.NewProvider("https://your-rpc-provider-url")
+ctx := context.Background()
+provider, err := rpc.NewProvider(ctx, "https://your-rpc-provider-url")
 if err != nil {
     // handle error
 }
 
 // we import the account address and the signature from the frontend (typescript)
-accountAddressInFelt, _ := utils.HexToFelt("0xabc123")
-signature := []string{"0xabc123", "0x123abc"}
+accountAddressInFelt, err := utils.HexToFelt("0xabc123")
+if err != nil {
+    // handle error
+}
 
-// we need to get the message hash, but, this time, we use the account address instead of the public key. `tdd` is the same as the in the previous Go code
+// signature is []*felt.Felt obtained from signing with the account
+signature := []*felt.Felt{ /* ... */ }
+
+// we need to get the message hash, but, this time, we use the account address instead of the public key. `ttd` is the same as in the previous Go code
 hash, err := ttd.GetMessageHash("0xabc123") // account address
 if err != nil {
     // handle error
@@ -335,22 +341,15 @@ if err != nil {
 
 callData := []*felt.Felt{
     hash,
-    (&felt.Felt{}).SetUint64(uint64(len(signature))), // size of the string array
+    (&felt.Felt{}).SetUint64(uint64(len(signature))),
 }
 
-for _, value := range signature {
-    callData = append(
-        callData,
-        utils.HexToFelt(value),
-	)
-}
+callData = append(callData, signature...)
 
 tx := rpc.FunctionCall{
-    ContractAddress: accountAddressInFelt,
-    EntryPointSelector: utils.GetSelectorFromNameFelt(
-        "is_valid_signature",
-    ),
-    Calldata: callData,
+    ContractAddress:    accountAddressInFelt,
+    EntryPointSelector: utils.GetSelectorFromNameFelt("is_valid_signature"),
+    Calldata:           callData,
 }
 
 result, err := provider.Call(context.Background(), tx, rpc.BlockID{Tag: "latest"})
@@ -358,14 +357,12 @@ if err != nil {
     // handle error
 }
 
-resultHex := result[0].Text(16)
-
-isValid, err := hex.DecodeString(resultHex)
-if err != nil && resultHex != "1" {
+isValid, err := hex.DecodeString(result[0].Text(16))
+if err != nil {
     // handle error
 }
 
-fmt.Println("Signature is valid:", string(isValid) == "VALID" || resultHex == "1")
+fmt.Println("Signature is valid:", string(isValid) == "VALID")
 ```
 
 ## Usage
@@ -380,7 +377,7 @@ Make sure that the message structure is the same on the frontend and backend to 
 
 ## Conclusion
 
-I hope that this article provided you with a comprehensive understanding of the signatures on Starknet and helped you implement it in your applications. If you have any questions or feedback, feel free to comment or reach out to me on [Twitter](https://twitter.com/std_lock_guard) or [GitHub](https://github.com/BastienFaivre). Thank you for reading! 
+I hope that this article provided you with a comprehensive understanding of the signatures on Starknet and helped you implement it in your applications. If you have any questions or feedback, feel free to comment or [reach out to me](https://bastienfaivre.com). Thank you for reading!
 
 Sources:
 - [https://docs.starknet.io/architecture-and-concepts/accounts/approach/](https://docs.starknet.io/architecture-and-concepts/accounts/approach/)
