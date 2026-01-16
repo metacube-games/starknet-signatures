@@ -1,0 +1,14 @@
+{
+    "name": "NodeJS Development Environment",
+    "image": "node:latest",
+    "workspaceFolder": "/app",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+    "postCreateCommand": "/app/setup.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "gitHub.copilot"
+            ]
+        }
+    }
+}
