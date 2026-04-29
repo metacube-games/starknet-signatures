@@ -402,5 +402,4 @@ Sources:
 - [EIP-712: Typed structured data hashing and signing](https://eips.ethereum.org/EIPS/eip-712)
 - [Elliptic Curve Digital Signature Algorithm — Wikipedia](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)
 - [RFC 6979: Deterministic Usage of DSA and ECDSA](https://datatracker.ietf.org/doc/html/rfc6979)
-- [Console Hacking 2010: PS3 Epic Fail — 27C3, fail0verflow](https://media.ccc.de/v/27c3-4087-en-console_hacking_2010)
 - [Bitcoin Android wallet vulnerability — Bitcoin.org security alert (2013)](https://bitcoin.org/en/alert/2013-08-11-android)
