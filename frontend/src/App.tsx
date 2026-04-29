@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, Grid, FormHelperText, Link } from "@mui/material";
+import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, FormHelperText, Link } from "@mui/material";
 import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, Language as LanguageIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
 import AceEditor from "react-ace";
 import 'brace/mode/json';
@@ -174,18 +174,12 @@ const App: React.FC = () => {
     <Stack
       direction="column"
       spacing={2}
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      height="100%"
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}
     >
       <Stack
         direction="column"
         spacing={2}
-        width="100%"
-        alignItems="flex-end"
-        sx={{ paddingTop: 1, paddingRight: 1 }}
+        sx={{ width: "100%", alignItems: "flex-end", paddingTop: 1, paddingRight: 1 }}
       >
         <Tooltip title={walletConnected ? "Disconnect" : ""}>
           <LoadingButton
@@ -204,13 +198,10 @@ const App: React.FC = () => {
       <Stack
         spacing={2}
         direction="column"
-        width="90vw"
-        maxWidth={500}
-        alignItems="center"
-        flex="1"
+        sx={{ width: "90vw", maxWidth: 500, alignItems: "center", flex: "1" }}
       >
         <Typography variant="h5">Starknet Signature Playground</Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Typography variant="caption">Checkout the complete signature guide</Typography>
           <IconButton href="https://dev.to/bastienfaivre/a-guide-on-starknet-signatures-a3m" target="_blank" rel="noopener noreferrer">
             <OpenInNewIcon />
@@ -250,28 +241,30 @@ const App: React.FC = () => {
             label={`Component #${index}`}
             fullWidth
             value={'0x' + BigInt(sig).toString(16)}
-            InputProps={{
-              endAdornment: (
-                <Tooltip title="Copied!" placement="top" open={signature.copied[index]}>
-                  <IconButton
-                    onClick={() => {
-                      navigator.clipboard.writeText('0x' + BigInt(sig).toString(16));
-                      setSignature((prev) => {
-                        const newSignature = { ...prev! };
-                        newSignature.copied[index] = true;
-                        return newSignature;
-                      });
-                      setTimeout(() => setSignature((prev) => {
-                        const newSignature = { ...prev! };
-                        newSignature.copied[index] = false;
-                        return newSignature;
-                      }), 2000);
-                    }}
-                  >
-                    <ContentCopyIcon />
-                  </IconButton>
-                </Tooltip>
-              ),
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <Tooltip title="Copied!" placement="top" open={signature.copied[index]}>
+                    <IconButton
+                      onClick={() => {
+                        navigator.clipboard.writeText('0x' + BigInt(sig).toString(16));
+                        setSignature((prev) => {
+                          const newSignature = { ...prev! };
+                          newSignature.copied[index] = true;
+                          return newSignature;
+                        });
+                        setTimeout(() => setSignature((prev) => {
+                          const newSignature = { ...prev! };
+                          newSignature.copied[index] = false;
+                          return newSignature;
+                        }), 2000);
+                      }}
+                    >
+                      <ContentCopyIcon />
+                    </IconButton>
+                  </Tooltip>
+                ),
+              },
             }}
             onChange={(e) => {
               try {
@@ -288,7 +281,7 @@ const App: React.FC = () => {
             sx={{ "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: "#000000" } }}
           />
         )) : null}
-        <Stack spacing={0.5} width="100%">
+        <Stack spacing={0.5} sx={{ width: "100%" }}>
           <TextField
             label="RPC URL for verification"
             placeholder="https://"
@@ -331,8 +324,8 @@ const App: React.FC = () => {
         }</Typography>}
       </Stack>
 
-      <Stack direction="row" alignItems="center" spacing={1}
-        sx={{ marginTop: 'auto' }}
+      <Stack direction="row" spacing={1}
+        sx={{ alignItems: "center", marginTop: 'auto' }}
       >
         <Typography variant="caption">Author: <b>Bastien Faivre</b></Typography>
         <IconButton href="https://github.com/BastienFaivre" target="_blank" rel="noopener noreferrer">
