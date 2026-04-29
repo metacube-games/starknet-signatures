@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, FormHelperText, Link } from "@mui/material";
 import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, Language as LanguageIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
 import AceEditor from "react-ace";
-import 'brace/mode/json';
+import 'ace-builds/src-noconflict/mode-json';
 import { connect, disconnect } from "@starknet-io/get-starknet";
 import { RpcProvider, AccountInterface, Signature, verifyMessageInStarknet } from "starknet";
 import { LoadingButton } from "@mui/lab";
@@ -219,6 +219,7 @@ const App: React.FC = () => {
             showFoldWidgets: false,
             showLineNumbers: false,
             tabSize: 2,
+            useWorker: false,
           }}
           width="100%"
           maxLines={20}
