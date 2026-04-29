@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, FormHelperText, Link } from "@mui/material";
 import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, Language as LanguageIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
-import AceEditor from "react-ace";
+import _AceEditorModule from "react-ace";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AceEditor = (_AceEditorModule as any).default ?? _AceEditorModule;
 import 'ace-builds/src-noconflict/mode-json';
 import { connect, disconnect } from "@starknet-io/get-starknet";
 import { RpcProvider, AccountInterface, Signature, verifyMessageInStarknet } from "starknet";
-import { LoadingButton } from "@mui/lab";
 
 const DEFAULT_TYPED_DATA = `{
   "types": {
@@ -182,7 +183,7 @@ const App: React.FC = () => {
         sx={{ width: "100%", alignItems: "flex-end", paddingTop: 1, paddingRight: 1 }}
       >
         <Tooltip title={walletConnected ? "Disconnect" : ""}>
-          <LoadingButton
+          <Button
             variant="contained"
             color="primary"
             loading={connectIsLoading}
@@ -191,7 +192,7 @@ const App: React.FC = () => {
             sx={{ width: 200 }}
           >
             {walletConnected && account ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}` : "Connect Wallet"}
-          </LoadingButton>
+          </Button>
         </Tooltip>
       </Stack>
 
@@ -224,7 +225,7 @@ const App: React.FC = () => {
           width="100%"
           maxLines={20}
         />
-        <LoadingButton
+        <Button
           variant="contained"
           color="primary"
           disabled={!walletConnected}
@@ -233,7 +234,7 @@ const App: React.FC = () => {
           startIcon={<KeyIcon />}
         >
           Sign Typed Data
-        </LoadingButton>
+        </Button>
         {signatureError && <Typography color="error">{signatureError}</Typography>}
         {signature ? signature.sig.map((sig, index) => (
           <TextField
@@ -304,7 +305,7 @@ const App: React.FC = () => {
             to verify the signature on-chain
           </FormHelperText>
         </Stack>
-        <LoadingButton
+        <Button
           variant="contained"
           color="primary"
           disabled={!walletConnected || !signature || !isValidUrl(rpcUrl)}
@@ -313,7 +314,7 @@ const App: React.FC = () => {
           startIcon={<CloudIcon />}
         >
           Verify on-chain
-        </LoadingButton>
+        </Button>
         {verificationResult !== null && (
           <Typography color={verificationResult ? "success.main" : "error"}>
             {verificationResult ? "Signature is valid" : "Signature is invalid"}
