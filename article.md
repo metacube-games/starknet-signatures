@@ -2,6 +2,7 @@
 
 ## CHANGELOG
 
+- 29.04.2026: Updated typed data format to SNIP-12 Revision 1 (`StarknetDomain`, `shortstring` types, `revision` field). Added note on signing determinism (TypeScript vs Go) and how to opt in/out.
 - 16.01.2026: Updated code snippets to match latest library versions.
 - 28.12.2024: Updated article to work with any wallet type.
 - 25.12.2024: Updated Go code due to breaking changes in the starknet.go library (>= v0.7.3)
@@ -31,10 +32,11 @@ In Starknet, messages to be signed typically follow the [EIP-712](https://eips.e
 ```json
 {
     types: {
-        StarkNetDomain: [
-            { name: "name", type: "felt" },
-            { name: "chainId", type: "felt" },
-            { name: "version", type: "felt" },
+        StarknetDomain: [
+            { name: "name", type: "shortstring" },
+            { name: "chainId", type: "shortstring" },
+            { name: "version", type: "shortstring" },
+            { name: "revision", type: "shortstring" },
         ],
         Message: [{ name: "message", type: "felt" }],
     },
@@ -43,6 +45,7 @@ In Starknet, messages to be signed typically follow the [EIP-712](https://eips.e
         name: "MyDapp",
         chainId: "SN_MAIN",
         version: "0.0.1",
+        revision: "1",
     },
     message: {
         message: "hello world!",
@@ -76,10 +79,11 @@ const pubY = encode.addHexPrefix(fullPublicKey.slice(68))
 
 const messageStructure: TypedData = {
     types: {
-        StarkNetDomain: [
-            { name: "name", type: "felt" },
-            { name: "chainId", type: "felt" },
-            { name: "version", type: "felt" },
+        StarknetDomain: [
+            { name: "name", type: "shortstring" },
+            { name: "chainId", type: "shortstring" },
+            { name: "version", type: "shortstring" },
+            { name: "revision", type: "shortstring" },
         ],
         Message: [{ name: "message", type: "felt" }],
     },
@@ -88,6 +92,7 @@ const messageStructure: TypedData = {
         name: "MyDapp",
         chainId: "SN_MAIN",
         version: "0.0.1",
+        revision: "1",
     },
     message: {
         message: "hello world!",
@@ -109,6 +114,9 @@ try {
     console.error("Error signing the message:", error);
 }
 
+// NOTE: Signer.signMessage is deterministic (RFC6979): the same private key and message
+// always produce the same (r, s). To opt into non-deterministic signing, bypass Signer:
+//   const sig = ec.starkCurve.sign(messageHash, privateKey, { extraEntropy: true });
 // signature has properties r and s
 ```
 
@@ -128,10 +136,11 @@ import (
 const typedDataContent = `
 {
 	"types": {
-	  	"StarkNetDomain": [
-			{ "name": "name", "type": "felt" },
-			{ "name": "chainId", "type": "felt" },
-			{ "name": "version", "type": "felt" }
+	  	"StarknetDomain": [
+			{ "name": "name", "type": "shortstring" },
+			{ "name": "chainId", "type": "shortstring" },
+			{ "name": "version", "type": "shortstring" },
+			{ "name": "revision", "type": "shortstring" }
 	  	],
 	  	"Message": [
 			{ "name": "message", "type": "felt" }
@@ -141,7 +150,8 @@ const typedDataContent = `
 	"domain": {
 	  	"name": "MyDapp",
 	  	"chainId": "SN_MAIN",
-	  	"version": "0.0.1"
+	  	"version": "0.0.1",
+	  	"revision": "1"
 	},
 	"message": {
 	  	"message": "hello world!"
@@ -199,12 +209,13 @@ func main() {
 
 	fmt.Println("\nMessage:")
 	fmt.Printf("\tMessage hash: 0x%s\n", hash.Text(16))
-	// 0x197093614bca282524e6b8f77de8f7dd9a9dd92ed4ea7f4f2b17f95e2bc441d
 
 	//--------------------------------------------------------------------------
 	// Signature and verification with public key (check locally on curve)
 	//--------------------------------------------------------------------------
 
+	// NOTE: curve.Sign uses a random k (non-deterministic) via crypto/rand internally.
+	// Each call produces a different valid signature for the same message and private key.
 	r, s, err := curve.Sign(hash.BigInt(new(big.Int)), privateKey)
 	if err != nil {
 		fmt.Println("Error signing message:", err)
@@ -212,6 +223,8 @@ func main() {
 	}
 }
 ```
+
+**A note on signature determinism.** The two implementations above behave differently: the TypeScript code is **deterministic** — starknet.js uses RFC6979 to derive the signing nonce `k` from the private key and message hash, so the same inputs always produce the same `(r, s)`. The Go code is **non-deterministic** — `curve.Sign` draws `k` from `crypto/rand`, so each call produces a different valid signature. Both signatures are cryptographically sound and verifiable. For most cryptographic primitives, randomness is strictly better — but ECDSA nonces are a special case. The security requirement for `k` is not unpredictability but **uniqueness across messages**: if the same `k` is used twice with the same private key, an attacker with both resulting signatures can recover the private key with simple algebra. Random `k` satisfies this in theory, but in practice it bets your private key on the quality of the random number generator — a vulnerability that has caused real-world catastrophes such as the [Bitcoin Android wallet vulnerability in 2013](https://bitcoin.org/en/alert/2013-08-11-android) were both due to weak RNGs reusing `k`. [RFC6979](https://datatracker.ietf.org/doc/html/rfc6979) eliminates this failure mode entirely by deriving `k` from `HMAC(privateKey, messageHash)`, which is unique per message and requires no RNG at signing time. Non-deterministic signing with a reliable RNG is not wrong, and it does offer one advantage: signature fingerprinting resistance — an observer who captures multiple signatures cannot confirm they came from the same signer by comparing values. But deterministic signing is the safer default, especially in environments where RNG quality cannot be fully guaranteed. If you need non-deterministic signing in TypeScript, bypass `Signer` and call `ec.starkCurve.sign(messageHash, privateKey, { extraEntropy: true })` directly, which mixes random bytes into the RFC6979 k-derivation.
 
 If you are developing a dApp, you won't have access to the user's private key. Instead, you can use the starknet.js library to sign the message. The code will interact with the browser wallet (typically ArgentX or Braavos) to sign the message. You can find a live demo at [https://signatures.felts.xyz](https://signatures.felts.xyz). Here is the simplified code to sign a message in TypeScript using the browser wallet (full code available in the [GitHub repository](https://github.com/metacube-games/starknet-signatures)):
 
@@ -226,10 +239,11 @@ const accountAddress = accounts[0];
 
 const messageStructure: TypedData = {
     types: {
-        StarkNetDomain: [
-            { name: "name", type: "felt" },
-            { name: "chainId", type: "felt" },
-            { name: "version", type: "felt" },
+        StarknetDomain: [
+            { name: "name", type: "shortstring" },
+            { name: "chainId", type: "shortstring" },
+            { name: "version", type: "shortstring" },
+            { name: "revision", type: "shortstring" },
         ],
         Message: [{ name: "message", type: "felt" }],
     },
@@ -238,6 +252,7 @@ const messageStructure: TypedData = {
         name: "MyDapp",
         chainId: "SN_MAIN",
         version: "0.0.1",
+        revision: "1",
     },
     message: {
         message: "hello world!",
@@ -352,7 +367,7 @@ tx := rpc.FunctionCall{
     Calldata:           callData,
 }
 
-result, err := provider.Call(context.Background(), tx, rpc.BlockID{Tag: "latest"})
+result, err := provider.Call(context.Background(), tx, rpc.BlockID{Tag: rpc.BlockTagLatest})
 if err != nil {
     // handle error
 }
@@ -380,8 +395,12 @@ Make sure that the message structure is the same on the frontend and backend to 
 I hope that this article provided you with a comprehensive understanding of the signatures on Starknet and helped you implement it in your applications. If you have any questions or feedback, feel free to comment or [reach out to me](https://bastienfaivre.com). Thank you for reading!
 
 Sources:
-- [https://docs.starknet.io/architecture-and-concepts/accounts/approach/](https://docs.starknet.io/architecture-and-concepts/accounts/approach/)
-- [https://www.starknetjs.com/docs/guides/signature/](https://www.starknetjs.com/docs/guides/signature/)
-- [https://docs.starknet.io/architecture-and-concepts/accounts/introduction/](https://docs.starknet.io/architecture-and-concepts/accounts/introduction/)
-- [https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)
-- [https://eips.ethereum.org/EIPS/eip-712](https://eips.ethereum.org/EIPS/eip-712)
+- [Starknet accounts and Account Abstraction](https://docs.starknet.io/learn/protocol/accounts)
+- [SNIP-6: Standard Account Interface (`is_valid_signature`)](https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-6.md)
+- [SNIP-12: Off-Chain Signatures (à la EIP-712)](https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-12.md)
+- [starknet.js signature guide](https://starknetjs.com/docs/7.6.4/guides/signature/)
+- [EIP-712: Typed structured data hashing and signing](https://eips.ethereum.org/EIPS/eip-712)
+- [Elliptic Curve Digital Signature Algorithm — Wikipedia](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)
+- [RFC 6979: Deterministic Usage of DSA and ECDSA](https://datatracker.ietf.org/doc/html/rfc6979)
+- [Console Hacking 2010: PS3 Epic Fail — 27C3, fail0verflow](https://media.ccc.de/v/27c3-4087-en-console_hacking_2010)
+- [Bitcoin Android wallet vulnerability — Bitcoin.org security alert (2013)](https://bitcoin.org/en/alert/2013-08-11-android)

@@ -10,10 +10,11 @@ import { RpcProvider, AccountInterface, Signature, verifyMessageInStarknet } fro
 
 const DEFAULT_TYPED_DATA = `{
   "types": {
-    "StarkNetDomain": [
-      { "name": "name", "type": "felt" },
-      { "name": "chainId", "type": "felt" },
-      { "name": "version", "type": "felt" }
+    "StarknetDomain": [
+      { "name": "name", "type": "shortstring" },
+      { "name": "chainId", "type": "shortstring" },
+      { "name": "version", "type": "shortstring" },
+      { "name": "revision", "type": "shortstring" }
     ],
     "Message": [{ "name": "message", "type": "felt" }]
   },
@@ -21,7 +22,8 @@ const DEFAULT_TYPED_DATA = `{
   "domain": {
     "name": "MyDapp",
     "chainId": "0x534e5f4d41494e",
-    "version": "0.0.1"
+    "version": "0.0.1",
+    "revision": "1"
   },
   "message": {
     "message": "hello world!"

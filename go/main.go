@@ -18,10 +18,11 @@ import (
 const typedDataContent = `
 {
 	"types": {
-	  	"StarkNetDomain": [
-			{ "name": "name", "type": "felt" },
-			{ "name": "chainId", "type": "felt" },
-			{ "name": "version", "type": "felt" }
+	  	"StarknetDomain": [
+			{ "name": "name", "type": "shortstring" },
+			{ "name": "chainId", "type": "shortstring" },
+			{ "name": "version", "type": "shortstring" },
+			{ "name": "revision", "type": "shortstring" }
 	  	],
 	  	"Message": [
 			{ "name": "message", "type": "felt" }
@@ -31,7 +32,8 @@ const typedDataContent = `
 	"domain": {
 	  	"name": "MyDapp",
 	  	"chainId": "SN_MAIN",
-	  	"version": "0.0.1"
+	  	"version": "0.0.1",
+	  	"revision": "1"
 	},
 	"message": {
 	  	"message": "hello world!"
@@ -89,12 +91,14 @@ func main() {
 
 	fmt.Println("\nMessage:")
 	fmt.Printf("\tMessage hash: 0x%s\n", hash.Text(16))
-	// 0x197093614bca282524e6b8f77de8f7dd9a9dd92ed4ea7f4f2b17f95e2bc441d
+	// 0x2a0910fc7e1337ca97ecb1dd5db41f202073e74d3760dd149034765412e5404
 
 	//--------------------------------------------------------------------------
 	// Signature and verification with public key (check locally on curve)
 	//--------------------------------------------------------------------------
 
+	// NOTE: curve.Sign uses a random k (non-deterministic) via crypto/rand internally.
+	// Each call produces a different valid signature for the same message and private key.
 	r, s, err := curve.Sign(hash.BigInt(new(big.Int)), privateKey)
 	if err != nil {
 		fmt.Println("Error signing message:", err)
@@ -109,7 +113,6 @@ func main() {
 
 	fmt.Println("\nSignature:")
 	fmt.Printf("\tSignature: r=0x%s, s=0x%s\n", r.Text(16), s.Text(16))
-	// r=0x6c6757e21686c4763305c386c9473f7d36c7ffd0c3b72e1985e6f768e29d4f9, s=0x123cb0c07a894bc4c42f119562e5032a4bcaef9299dd9273eeda218f7d066a8
 	fmt.Printf("\tSignature is valid: %t\n", isValid)
 	// true
 
@@ -208,7 +211,7 @@ func main() {
 		Calldata:           callData,
 	}
 
-	result, err := provider.Call(context.Background(), tx, rpc.BlockID{Tag: "latest"})
+	result, err := provider.Call(context.Background(), tx, rpc.BlockID{Tag: rpc.BlockTagLatest})
 	if err != nil {
 		fmt.Println("Error calling function:", err)
 		return
