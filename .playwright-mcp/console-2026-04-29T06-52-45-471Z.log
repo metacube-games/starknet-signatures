@@ -1,0 +1,19 @@
+[     115ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:14337
+[     973ms] Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: object.
+
+Check the render method of `App`.
+    at createFiberFromTypeAndProps (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:2817:21)
+    at createFiberFromElement (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:2828:11)
+    at createChild (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3631:47)
+    at reconcileChildrenArray (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3737:63)
+    at reconcileChildFibersImpl (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3842:106)
+    at http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3869:28
+    at reconcileChildren (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5386:46)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:6200:1569)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:851:66)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8429:92)
+[     973ms] [WARNING] %s
+
+%s
+ An error occurred in the <div> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5257

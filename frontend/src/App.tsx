@@ -37,7 +37,7 @@ const App: React.FC = () => {
   const [signature, setSignature] = useState<{ sig: string[], copied: boolean[] } | null>(null);
   const [copied, setCopied] = useState<boolean[]>(new Array(10).fill(false)); // Dumb solution to avoid React controlled error
   const [signatureError, setSignatureError] = useState<string | null>(null);
-  const [rpcUrl, setRpcUrl] = useState<string>("https://1rpc.io/starknet");
+  const [rpcUrl, setRpcUrl] = useState<string>("https://starknet-rpc.publicnode.com/");
   const [verificationIsLoading, setVerificationIsLoading] = useState(false);
   const [verificationResult, setVerificationResult] = useState<boolean | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -235,7 +235,7 @@ const App: React.FC = () => {
         >
           Sign Typed Data
         </Button>
-        {signatureError && <Typography color="error">{signatureError}</Typography>}
+        {signatureError && <Typography sx={{ color: "error.main" }}>{signatureError}</Typography>}
         {signature ? signature.sig.map((sig, index) => (
           <TextField
             key={index}
@@ -316,11 +316,11 @@ const App: React.FC = () => {
           Verify on-chain
         </Button>
         {verificationResult !== null && (
-          <Typography color={verificationResult ? "success.main" : "error"}>
+          <Typography sx={{ color: verificationResult ? "success.main" : "error.main" }}>
             {verificationResult ? "Signature is valid" : "Signature is invalid"}
           </Typography>
         )}
-        {verificationError && <Typography color="error" align="center">{
+        {verificationError && <Typography sx={{ color: "error.main" }} align="center">{
           verificationError.includes("Contract not found") ?
             "Your account contract is not deployed! You need it to verify the signature on-chain." : verificationError
         }</Typography>}

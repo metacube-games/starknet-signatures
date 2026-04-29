@@ -1,0 +1,89 @@
+[     185ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:14337
+[    1078ms] [WARNING] MUI: The LoadingButton component functionality is now part of the Button component from Material UI.
+
+You should use `import Button from '@mui/material/Button'`
+or `import { Button } from '@mui/material'` @ http://localhost:3001/node_modules/.vite/deps/@mui_lab.js?v=9a223ac1:258
+[    1091ms] Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: object.
+
+Check the render method of `App`.
+    at createFiberFromTypeAndProps (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:2817:21)
+    at createFiberFromElement (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:2828:11)
+    at createChild (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3631:47)
+    at reconcileChildrenArray (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3737:63)
+    at reconcileChildFibersImpl (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3842:106)
+    at http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3869:28
+    at reconcileChildren (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5386:46)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:6200:1569)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:851:66)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8429:92)
+[    1091ms] [WARNING] %s
+
+%s
+ An error occurred in the <div> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5257
+[   93557ms] ReferenceError: LoadingButton is not defined
+    at App (http://localhost:3001/src/App.tsx?t=1777445543862:177:40)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:12868:12)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:4213:19)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5569:16)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:6140:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:851:66)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8429:92)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8325:37)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8309:6)
+    at performWorkOnRoot (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:7994:27)
+[   93558ms] [WARNING] %s
+
+%s
+ An error occurred in the <App> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5257
+[   99987ms] ReferenceError: LoadingButton is not defined
+    at App (http://localhost:3001/src/App.tsx?t=1777445550299:273:30)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:12868:12)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:4213:19)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5569:16)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:6140:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:851:66)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8429:92)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8325:37)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8309:6)
+    at performWorkOnRoot (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:7994:27)
+[   99987ms] [WARNING] %s
+
+%s
+ An error occurred in the <App> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5257
+[  104826ms] ReferenceError: LoadingButton is not defined
+    at App (http://localhost:3001/src/App.tsx?t=1777445555135:397:30)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:12868:12)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:4213:19)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5569:16)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:6140:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:851:66)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8429:92)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8325:37)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8309:6)
+    at performWorkOnRoot (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:7994:27)
+[  104826ms] [WARNING] %s
+
+%s
+ An error occurred in the <App> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5257
+[  109877ms] Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: object.
+
+Check the render method of `App`.
+    at createFiberFromTypeAndProps (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:2817:21)
+    at createFiberFromElement (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:2828:11)
+    at createChild (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3631:47)
+    at reconcileChildrenArray (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3737:63)
+    at reconcileChildFibersImpl (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3842:106)
+    at http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:3869:28
+    at reconcileChildren (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5386:46)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:6200:1569)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:851:66)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:8429:92)
+[  109877ms] [WARNING] %s
+
+%s
+ An error occurred in the <div> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=3aa9d9da:5257

@@ -1,0 +1,64 @@
+- generic [ref=e3]:
+  - button "Connect Wallet" [ref=e5] [cursor=pointer]:
+    - img [ref=e7]
+    - text: Connect Wallet
+  - generic [ref=e9]:
+    - heading "Starknet Signature Playground" [level=5] [ref=e10]
+    - generic [ref=e11]:
+      - generic [ref=e12]: Checkout the complete signature guide
+      - link [ref=e13] [cursor=pointer]:
+        - /url: https://dev.to/bastienfaivre/a-guide-on-starknet-signatures-a3m
+        - img [ref=e14]
+    - generic [ref=e16]:
+      - textbox "Cursor at row 19" [ref=e17]
+      - generic [ref=e19]:
+        - generic:
+          - generic: "{"
+          - generic: "\"types\": {"
+          - generic: "\"StarkNetDomain\": ["
+          - generic: "{ \"name\": \"name\", \"type\": \"felt\" },"
+          - generic: "{ \"name\": \"chainId\", \"type\": \"felt\" },"
+          - generic: "{ \"name\": \"version\", \"type\": \"felt\" }"
+          - generic: "],"
+          - generic: "\"Message\": [{ \"name\": \"message\", \"type\": \"felt\" }]"
+          - generic: "},"
+          - generic: "\"primaryType\": \"Message\","
+          - generic: "\"domain\": {"
+          - generic: "\"name\": \"MyDapp\","
+          - generic: "\"chainId\": \"0x534e5f4d41494e\","
+          - generic: "\"version\": \"0.0.1\""
+          - generic: "},"
+          - generic: "\"message\": {"
+          - generic: "\"message\": \"hello world!\""
+          - generic: "}"
+          - generic: "}"
+    - button "Sign Typed Data" [disabled]:
+      - generic:
+        - img
+      - text: Sign Typed Data
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]: RPC URL for verification
+        - generic [ref=e23]:
+          - textbox "RPC URL for verification" [ref=e24]:
+            - /placeholder: https://
+            - text: https://1rpc.io/starknet
+          - group:
+            - generic: RPC URL for verification
+      - paragraph [ref=e25]:
+        - text: Enter your
+        - link "RPC node URL" [ref=e26] [cursor=pointer]:
+          - /url: https://www.comparenodes.com/library/public-endpoints/starknet/
+        - text: to verify the signature on-chain
+    - button "Verify on-chain" [disabled]:
+      - generic:
+        - img
+      - text: Verify on-chain
+  - generic [ref=e27]:
+    - generic [ref=e28]: "Author: Bastien Faivre"
+    - link [ref=e29] [cursor=pointer]:
+      - /url: https://github.com/BastienFaivre
+      - img [ref=e30]
+    - link [ref=e32] [cursor=pointer]:
+      - /url: https://bastienfaivre.com
+      - img [ref=e33]
