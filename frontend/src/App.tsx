@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, IconButton, Stack, TextField, Tooltip, Button, Typography, FormHelperText, Link } from "@mui/material";
+import { Alert, Box, IconButton, Stack, TextField, Tooltip, Button, Typography, FormHelperText, Link } from "@mui/material";
 import { ContentCopy as ContentCopyIcon, Wallet as WalletIcon, OpenInNew as OpenInNewIcon, Key as KeyIcon, Cloud as CloudIcon, GitHub as GitHubIcon, Language as LanguageIcon, RestorePage as RestorePageIcon } from '@mui/icons-material';
 import _AceEditorModule from "react-ace";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,6 +179,17 @@ const App: React.FC = () => {
       spacing={2}
       sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}
     >
+      <Alert
+        severity="warning"
+        square
+        sx={{ width: "100%", boxSizing: "border-box", justifyContent: "center", "& .MuiAlert-message": { textAlign: "center" } }}
+      >
+        <b>This playground is no longer maintained.</b> Like its{" "}
+        <Link href="https://dev.to/bastienfaivre/a-guide-on-starknet-signatures-a3m" target="_blank" rel="noopener noreferrer" color="inherit">
+          companion article
+        </Link>
+        , it won't receive further updates and may stop working as Starknet evolves. Use it at your own risk.
+      </Alert>
       <Stack
         direction="column"
         spacing={2}
